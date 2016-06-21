@@ -1,0 +1,7 @@
+This files describes API changes in /mod/workshep - activity modules,
+information provided here is intended especially for developers.
+
+=== 2.7 ===
+
+* The method workshep::log() has been deprecated in the workshep module. Please use the event classes instead
+  (mod/workshep/classes/event).
