@@ -79,12 +79,12 @@ $string['clearassessmentsconfirm'] = 'Are you sure you want to clear all assessm
 $string['clearaggregatedgradesconfirm'] = 'Are you sure you want to clear the calculated grades for submissions and grades for assessment?';
 $string['conclusion'] = 'Conclusion';
 $string['conclusion_help'] = 'Conclusion text is displayed to participants at the end of the activity.';
-$string['configexamplesmode'] = 'Default mode of examples assessment in Enhanced Workshop\'s';
-$string['configgrade'] = 'Default maximum grade for submission in Enhanced Workshop\'s';
+$string['configexamplesmode'] = 'Default mode of examples assessment in Enhanced Workshops';
+$string['configgrade'] = 'Default maximum grade for submission in Enhanced Workshops';
 $string['configgradedecimals'] = 'Default number of digits that should be shown after the decimal point when displaying grades.';
-$string['configgradinggrade'] = 'Default maximum grade for assessment in Enhanced Workshop\'s';
-$string['configmaxbytes'] = 'Default maximum submission file size for all Enhanced Workshop\'s on the site (subject to course limits and other local settings)';
-$string['configstrategy'] = 'Default grading strategy for Enhanced Workshop\'s';
+$string['configgradinggrade'] = 'Default maximum grade for assessment in Enhanced Workshops';
+$string['configmaxbytes'] = 'Default maximum submission file size for all Enhanced Workshops on the site (subject to course limits and other local settings)';
+$string['configstrategy'] = 'Default grading strategy for Enhanced Workshops';
 $string['createsubmission'] = 'Start preparing your submission';
 $string['daysago'] = '{$a} days ago';
 $string['daysleft'] = '{$a} days left';
@@ -191,7 +191,7 @@ Submissions are assessed using a multi-criteria assessment form defined by the t
 
 Students obtain two grades in a Enhanced Workshop activity - a grade for their submission and a grade for their assessment of their peers\' submissions. Both grades are recorded in the gradebook.';
 $string['modulename_link'] = 'mod/workshep/view';
-$string['modulenameplural'] = 'Enhanced Workshop\'s';
+$string['modulenameplural'] = 'Enhanced Workshops';
 $string['mysubmission'] = 'My submission';
 $string['nattachments'] = 'Maximum number of submission attachments';
 $string['noexamples'] = 'No examples yet in this Enhanced Workshop';
@@ -202,7 +202,7 @@ $string['nosubmissions'] = 'No submissions yet in this Enhanced Workshop';
 $string['nothingtoreview'] = 'Nothing to review';
 $string['notassessed'] = 'Not assessed yet';
 $string['notoverridden'] = 'Not overridden';
-$string['noworksheps'] = 'There are no Enhanced Workshop\'s in this course';
+$string['noworksheps'] = 'There are no Enhanced Workshops in this course';
 $string['noyoursubmission'] = 'You have not submitted your work yet';
 $string['nullgrade'] = '-';
 $string['overallfeedback'] = 'Overall feedback';
