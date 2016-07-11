@@ -62,6 +62,10 @@ $canoverridegrades      = has_capability('mod/workshep:overridegrades', $workshe
 $isreviewer             = ($USER->id == $assessment->reviewerid);
 $isauthor               = ($USER->id == $submission->authorid);
 
+if ($workshep->teammode) {
+    $isauthor = ($workshep->user_group($submission->authorid)->id == $workshep->user_group($USER->id)->id);
+}
+
 if ($canviewallsubmissions) {
     // check this flag against the group membership yet
     if (groups_get_activity_groupmode($workshep->cm) == SEPARATEGROUPS) {
