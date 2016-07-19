@@ -3943,7 +3943,7 @@ class workshep_user_plan implements renderable {
 			$reviewers = $workshep->get_potential_reviewers();
 			$numexamples = (int)$workshep->numexamples ?: count($workshep->get_examples_for_manager());
 			$sql = <<<SQL
-SELECT a.reviewerid, count(a) 
+SELECT a.reviewerid, count(a.reviewerid) 
 FROM {workshep_submissions} s 
 	LEFT JOIN {workshep_assessments} a 
 	ON a.submissionid = s.id 
@@ -3952,7 +3952,7 @@ WHERE s.workshepid = :workshepid
 	AND a.weight = 0 
 	AND a.grade IS NOT NULL
 GROUP BY a.reviewerid 
-HAVING count(a) >= :numexamples
+HAVING count(a.reviewerid) >= :numexamples
 SQL;
 
 			$reviewcounts = $DB->get_records_sql($sql, array('workshepid' => $workshep->id, 'numexamples' => $numexamples));
@@ -5185,10 +5185,14 @@ class workshep_calibration_report implements renderable {
 	        $rslt = $DB->get_records_select("workshep_assessments",$where,$params);
         
 	        foreach($rslt as $v) {
-	            $ex = $userexamples[$v->reviewerid][$v->submissionid];
-	            $ex->grade = $v->grade;
-	            $ex->gradinggrade = $v->gradinggrade;
-	            $ex->feedbackauthor = $v->feedbackauthor;
+                // if we've changed the number of examples, the user might have completed examples that are no longer part of their
+                // allocated set of examples to mark, so check for existence first
+                if (isset($userexamples[$v->reviewerid][$v->submissionid])) { 
+    	            $ex = $userexamples[$v->reviewerid][$v->submissionid];
+    	            $ex->grade = $v->grade;
+    	            $ex->gradinggrade = $v->gradinggrade;
+    	            $ex->feedbackauthor = $v->feedbackauthor;
+                }
 	        }
         
         
