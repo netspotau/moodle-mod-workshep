@@ -722,7 +722,7 @@ case workshep::PHASE_CLOSED:
 		echo html_writer::checkbox('flaggingon', '1', $workshep->submitterflagging, get_string('flaggingon', 'workshep'), array('onchange' => "set_flagging_on(this, {$cm->id});"));
 		
 		$url = new moodle_url('flagged_assessments.php', array('id' => $cm->id));
-        echo $output->single_button($url, get_string('showflaggedassessments', 'workshep', 1));
+        echo $output->single_button($url, get_string('showflaggedassessments', 'workshep', 1), 'get');
 
 		echo $output->box_end();
 		print_collapsible_region_end();
