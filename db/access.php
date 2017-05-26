@@ -210,6 +210,17 @@ $capabilities = array(
         )
     ),
 
+    // Limit submit on behalf of others
+    'mod/workshep:submitonbehalfofothers' => array(
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_MODULE,
+        'archetypes' => array(
+            'teacher' => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW
+        )
+    ),
+
     // Ability to override grade for submission or the calculated grades for assessment
     // and to run aggregation tasks that computes the total grade
     'mod/workshep:overridegrades' => array(
@@ -225,6 +236,17 @@ $capabilities = array(
     // Ability to ignore time restrictions (submission start/end time and assessment
     // start/end time) if they are defined
     'mod/workshep:ignoredeadlines' => array(
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_MODULE,
+        'archetypes' => array(
+            'teacher' => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW
+        )
+    ),
+
+    // Ability to delete other users' submissions.
+    'mod/workshep:deletesubmissions' => array(
         'captype' => 'write',
         'contextlevel' => CONTEXT_MODULE,
         'archetypes' => array(

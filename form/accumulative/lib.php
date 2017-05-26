@@ -326,7 +326,7 @@ class workshep_accumulative_strategy implements workshep_strategy {
         if ($include_examples == false) {
             $sql .= " AND s.example=0";
         }
-        
+
         if (is_null($restrict)) {
             // update all users - no more conditions
         } elseif (!empty($restrict)) {

@@ -102,4 +102,11 @@ class assessments_reset extends \core\event\base {
             throw new \coding_exception('The \'workshepid\' value must be set in other.');
         }
     }
+
+    public static function get_other_mapping() {
+        $othermapped = array();
+        $othermapped['workshepid'] = array('db' => 'workshep', 'restore' => 'workshep');
+
+        return $othermapped;
+    }
 }

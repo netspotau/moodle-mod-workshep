@@ -246,7 +246,7 @@ class workshep_scheduled_allocator implements workshep_allocator {
             $DB->update_record('workshepallocation_scheduled', $data);
         }
     }
-    
+
     public static function teammode_class() {
         return null;
     }

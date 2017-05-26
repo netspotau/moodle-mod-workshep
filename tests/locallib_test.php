@@ -416,4 +416,100 @@ class mod_workshep_internal_api_testcase extends advanced_testcase {
         // excersise SUT
         $a = $this->workshep->prepare_example_reference_assessment($fakerawrecord);
     }
+
+    /**
+     * Test normalizing list of extensions.
+     */
+    public function test_normalize_file_extensions() {
+        $this->resetAfterTest(true);
+
+        $this->assertSame(['.odt'], workshep::normalize_file_extensions('odt'));
+        $this->assertSame(['.odt'], workshep::normalize_file_extensions('.odt'));
+        $this->assertSame(['.odt'], workshep::normalize_file_extensions('.ODT'));
+        $this->assertSame(['.doc', '.jpg', '.mp3'], workshep::normalize_file_extensions('doc, jpg, mp3'));
+        $this->assertSame(['.doc', '.jpg', '.mp3'], workshep::normalize_file_extensions(['.doc', '.jpg', '.mp3']));
+        $this->assertSame(['.doc', '.jpg', '.mp3'], workshep::normalize_file_extensions('doc, *.jpg, mp3'));
+        $this->assertSame(['.doc', '.jpg', '.mp3'], workshep::normalize_file_extensions(['doc ', ' JPG ', '.mp3']));
+        $this->assertSame(['.rtf', '.pdf', '.docx'], workshep::normalize_file_extensions("RTF,.pdf\n...DocX,,,;\rPDF\trtf ...Rtf"));
+        $this->assertSame(['.tgz', '.tar.gz'], workshep::normalize_file_extensions('tgz,TAR.GZ tar.gz .tar.gz tgz TGZ'));
+        $this->assertSame(['.notebook'], workshep::normalize_file_extensions('"Notebook":notebook;NOTEBOOK;,\'NoTeBook\''));
+        $this->assertSame([], workshep::normalize_file_extensions(''));
+        $this->assertSame([], workshep::normalize_file_extensions([]));
+        $this->assertSame(['.0'], workshep::normalize_file_extensions(0));
+        $this->assertSame(['.0'], workshep::normalize_file_extensions('0'));
+        $this->assertSame(['.odt'], workshep::normalize_file_extensions('*.odt'));
+        $this->assertSame([], workshep::normalize_file_extensions('.'));
+        $this->assertSame(['.foo'], workshep::normalize_file_extensions('. foo'));
+        $this->assertSame([], workshep::normalize_file_extensions('*'));
+        $this->assertSame([], workshep::normalize_file_extensions('*~'));
+        $this->assertSame(['.pdf', '.ps'], workshep::normalize_file_extensions('* pdf *.ps foo* *bar .r??'));
+    }
+
+    /**
+     * Test cleaning list of extensions.
+     */
+    public function test_clean_file_extensions() {
+        $this->resetAfterTest(true);
+
+        $this->assertSame('', workshep::clean_file_extensions(''));
+        $this->assertSame('', workshep::clean_file_extensions(null));
+        $this->assertSame('', workshep::clean_file_extensions(' '));
+        $this->assertSame('0', workshep::clean_file_extensions(0));
+        $this->assertSame('0', workshep::clean_file_extensions('0'));
+        $this->assertSame('doc, rtf, pdf', workshep::clean_file_extensions('*.Doc, RTF, PDF, .rtf'.PHP_EOL.'PDF '));
+        $this->assertSame('doc, rtf, pdf', 'doc, rtf, pdf');
+    }
+
+    /**
+     * Test validation of the list of file extensions.
+     */
+    public function test_invalid_file_extensions() {
+        $this->resetAfterTest(true);
+
+        $this->assertSame([], workshep::invalid_file_extensions('', ''));
+        $this->assertSame([], workshep::invalid_file_extensions('', '.doc'));
+        $this->assertSame([], workshep::invalid_file_extensions('odt', ''));
+        $this->assertSame([], workshep::invalid_file_extensions('odt', '*'));
+        $this->assertSame([], workshep::invalid_file_extensions('odt', 'odt'));
+        $this->assertSame([], workshep::invalid_file_extensions('doc, odt, pdf', ['pdf', 'doc', 'odt']));
+        $this->assertSame([], workshep::invalid_file_extensions(['doc', 'odt', 'PDF'], ['.doc', '.pdf', '.odt']));
+        $this->assertSame([], workshep::invalid_file_extensions('*~ .docx, Odt PDF :doc .pdf', '*.docx *.odt *.pdf *.doc'));
+        $this->assertSame(['.00001-wtf-is-this'], workshep::invalid_file_extensions('docx tgz .00001-wtf-is-this', 'tgz docx'));
+        $this->assertSame(['.foobar', '.wtfisthis'], workshep::invalid_file_extensions(['.pdf', '.foobar', 'wtfisthis'], 'pdf'));
+        $this->assertSame([], workshep::invalid_file_extensions('', ''));
+        $this->assertSame(['.odt'], workshep::invalid_file_extensions(['.PDF', 'PDF', '.ODT'], 'jpg pdf png gif'));
+        $this->assertSame(['.odt'], workshep::invalid_file_extensions(['.PDF', 'PDF', '.ODT'], '.jpg,.pdf,  .png .gif'));
+        $this->assertSame(['.exe', '.bat'], workshep::invalid_file_extensions(['.exe', '.odt', '.bat', ''], 'odt'));
+    }
+
+    /**
+     * Test checking file name against the list of allowed extensions.
+     */
+    public function test_is_allowed_file_type() {
+        $this->resetAfterTest(true);
+
+        $this->assertTrue(workshep::is_allowed_file_type('README.txt', ''));
+        $this->assertTrue(workshep::is_allowed_file_type('README.txt', ['']));
+        $this->assertFalse(workshep::is_allowed_file_type('README.txt', '0'));
+
+        $this->assertFalse(workshep::is_allowed_file_type('README.txt', 'xt'));
+        $this->assertFalse(workshep::is_allowed_file_type('README.txt', 'old.txt'));
+
+        $this->assertTrue(workshep::is_allowed_file_type('README.txt', 'txt'));
+        $this->assertTrue(workshep::is_allowed_file_type('README.txt', '.TXT'));
+        $this->assertTrue(workshep::is_allowed_file_type('README.TXT', 'txt'));
+        $this->assertTrue(workshep::is_allowed_file_type('README.txt', '.txt .md'));
+        $this->assertTrue(workshep::is_allowed_file_type('README.txt', 'HTML TXT DOC RTF'));
+        $this->assertTrue(workshep::is_allowed_file_type('README.txt', ['HTML', '...TXT', 'DOC', 'RTF']));
+
+        $this->assertTrue(workshep::is_allowed_file_type('C:\Moodle\course-data.tar.gz', 'gzip zip 7z tar.gz'));
+        $this->assertFalse(workshep::is_allowed_file_type('C:\Moodle\course-data.tar.gz', 'gzip zip 7z tar'));
+        $this->assertTrue(workshep::is_allowed_file_type('~/course-data.tar.gz', 'gzip zip 7z gz'));
+        $this->assertFalse(workshep::is_allowed_file_type('~/course-data.tar.gz', 'gzip zip 7z'));
+
+        $this->assertFalse(workshep::is_allowed_file_type('Alice on the beach.jpg.exe', 'png gif jpg bmp'));
+        $this->assertFalse(workshep::is_allowed_file_type('xfiles.exe.jpg', 'exe com bat sh'));
+        $this->assertFalse(workshep::is_allowed_file_type('solution.odt~', 'odt, xls'));
+        $this->assertTrue(workshep::is_allowed_file_type('solution.odt~', 'odt, odt~'));
+    }
 }

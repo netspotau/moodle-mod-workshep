@@ -62,8 +62,8 @@ class workshepallocation_manual_renderer extends mod_workshep_renderer  {
         if (empty($allocations)) {
             return '';
         }
-        
-        
+
+
         $PAGE->requires->js('/mod/workshep/allocation/manual/rules.js');
 
         // convert user collections into drop down menus
@@ -93,16 +93,16 @@ class workshepallocation_manual_renderer extends mod_workshep_renderer  {
             $table->rowclasses[] = implode(' ', $thisrowclasses);
             $table->data[] = $row;
         }
-        
+
         $url = new moodle_url("allocation/download.php", array("id" => $this->workshep->cm->id));
         $btn = new single_button($url, get_string('downloadallocations', 'workshep'), 'get');
-        
+
         $form = new workshep_allocation_manual_upload_form($CFG->httpswwwroot.'/mod/workshep/allocation/manual/upload.php');
-        
+
         $o = html_writer::table($table);
         $o .= $this->output->render($btn);
         $o .= $form->toHtml();
-        
+
         return $this->output->container($o, 'manual-allocator');
     }
 
@@ -237,7 +237,7 @@ class workshepallocation_manual_renderer extends mod_workshep_renderer  {
      */
     protected function render_workshepallocation_teammode_manual_allocations(workshepallocation_teammode_manual_allocations $data) {
         global $CFG;
-        
+
         $allocations        = $data->allocations;       // array prepared array of all allocations data
 		$gradeitems			= $data->gradeitems;
 
@@ -265,9 +265,9 @@ class workshepallocation_manual_renderer extends mod_workshep_renderer  {
         $table->rowclasses  = array();
         $table->colclasses  = array('reviewedby', 'peer', 'reviewerof');
         $table->data        = array();
-		
+
         foreach ($gradeitems as $gradeitem) {
-			
+
 			$allocation = $allocations[$gradeitem->id];
             $row = array();
 
@@ -285,11 +285,11 @@ class workshepallocation_manual_renderer extends mod_workshep_renderer  {
         }
 
 
-		
+
 		if (!empty($data->groupduplicates)) {
 			$dupnames = implode( "," , array_values($data->groupduplicates) );
 			$formhtml = get_string("teammode_duplicategroupnameswarning",'workshep',$dupnames);
-		} else {            
+		} else {
 	        $form = new workshep_allocation_teammode_manual_upload_form($CFG->httpswwwroot.'/mod/workshep/allocation/manual/teamupload.php');
 			$formhtml = $form->toHtml();
 		}
@@ -331,7 +331,7 @@ class workshepallocation_manual_renderer extends mod_workshep_renderer  {
      */
     protected function helper_teammode_reviewers_of_participant(stdclass $allocation, array $userinfo, array $reviewers, $selfassessment) {
         $o = '';
-        
+
         if (is_null($allocation->submissionid)) {
             $o .= $this->output->container(get_string('nothingtoreview', 'workshep'), 'info');
         } else {
@@ -340,9 +340,9 @@ class workshepallocation_manual_renderer extends mod_workshep_renderer  {
                 $exclude[$allocation->userid] = true;
             	foreach(groups_get_members($allocation->groupid,'u.id') as $e) {
                 	$exclude[$e->id] = true;
-            	}    
+            	}
             }
-			// exclude users who are already reviewing this	
+			// exclude users who are already reviewing this
 			$exclude += $allocation->reviewedby;
             // todo add an option to exclude users without own submission
             $options = array_diff_key($reviewers, $exclude);

@@ -27,8 +27,7 @@
 
 require_once(__DIR__ . '/../../../../lib/behat/behat_base.php');
 
-use Behat\Behat\Context\Step\Given as Given,
-    Behat\Gherkin\Node\TableNode as TableNode;
+use Behat\Gherkin\Node\TableNode as TableNode;
 
 /**
  * Steps definitions related to mod_workshep.
@@ -48,17 +47,18 @@ class behat_mod_workshep extends behat_base {
      */
     public function i_change_phase_in_workshep_to($workshepname, $phase) {
         $workshepname = $this->escape($workshepname);
-        $phaseliteral = $this->getSession()->getSelectorsHandler()->xpathLiteral($phase);
-        $switchphase = $this->getSession()->getSelectorsHandler()->xpathLiteral(get_string('switchphase', 'workshep'));
+        $phaseliteral = behat_context_helper::escape($phase);
+        $switchphase = behat_context_helper::escape(get_string('switchphase', 'workshep'));
 
         $xpath = "//*[@class='userplan']/descendant::div[./span[contains(.,$phaseliteral)]]/".
                 "descendant-or-self::a[./img[@alt=$switchphase]]";
         $continue = $this->escape(get_string('continue'));
-        return array(
-            new Given("I follow \"$workshepname\""),
-            new Given("I click on \"$xpath\" \"xpath_element\""),
-            new Given("I press \"$continue\""),
-        );
+
+        $this->execute('behat_general::click_link', $workshepname);
+
+        $this->execute("behat_general::i_click_on", array($xpath, "xpath_element"));
+
+        $this->execute("behat_forms::press_button", $continue);
     }
 
     /**
@@ -72,12 +72,14 @@ class behat_mod_workshep extends behat_base {
         $workshepname = $this->escape($workshepname);
         $savechanges = $this->escape(get_string('savechanges'));
         $xpath = "//div[contains(concat(' ', normalize-space(@class), ' '), ' ownsubmission ')]/descendant::input[@type='submit']";
-        return array(
-            new Given("I follow \"$workshepname\""),
-            new Given("I click on \"$xpath\" \"xpath_element\""),
-            new Given("I set the following fields to these values:", $table),
-            new Given("I press \"$savechanges\""),
-        );
+
+        $this->execute('behat_general::click_link', $workshepname);
+
+        $this->execute("behat_general::i_click_on", array($xpath, "xpath_element"));
+
+        $this->execute("behat_forms::i_set_the_following_fields_to_these_values", $table);
+
+        $this->execute("behat_forms::press_button", $savechanges);
     }
 
     /**
@@ -91,12 +93,14 @@ class behat_mod_workshep extends behat_base {
         $workshepname = $this->escape($workshepname);
         $editassessmentform = $this->escape(get_string('editassessmentform', 'workshep'));
         $saveandclose = $this->escape(get_string('saveandclose', 'workshep'));
-        return array(
-            new Given("I follow \"$workshepname\""),
-            new Given("I follow \"$editassessmentform\""),
-            new Given("I set the following fields to these values:", $table),
-            new Given("I press \"$saveandclose\""),
-        );
+
+        $this->execute('behat_general::click_link', $workshepname);
+
+        $this->execute('behat_general::click_link', $editassessmentform);
+
+        $this->execute("behat_forms::i_set_the_following_fields_to_these_values", $table);
+
+        $this->execute("behat_forms::press_button", $saveandclose);
     }
 
     /**
@@ -109,17 +113,21 @@ class behat_mod_workshep extends behat_base {
      */
     public function i_assess_submission_in_workshep_as($submission, $workshepname, TableNode $table) {
         $workshepname = $this->escape($workshepname);
-        $submissionliteral = $this->getSession()->getSelectorsHandler()->xpathLiteral($submission);
+        $submissionliteral = behat_context_helper::escape($submission);
         $xpath = "//div[contains(concat(' ', normalize-space(@class), ' '), ' assessment-summary ') ".
                 "and contains(.,$submissionliteral)]";
         $assess = $this->escape(get_string('assess', 'workshep'));
         $saveandclose = $this->escape(get_string('saveandclose', 'workshep'));
-        return array(
-            new Given("I follow \"$workshepname\""),
-            new Given("I click on \"$assess\" \"button\" in the \"$xpath\" \"xpath_element\""),
-            new Given("I set the following fields to these values:", $table),
-            new Given("I press \"$saveandclose\""),
+
+        $this->execute('behat_general::click_link', $workshepname);
+
+        $this->execute('behat_general::i_click_on_in_the',
+            array($assess, "button", $xpath, "xpath_element")
         );
+
+        $this->execute("behat_forms::i_set_the_following_fields_to_these_values", $table);
+
+        $this->execute("behat_forms::press_button", $saveandclose);
     }
 
     /**
@@ -131,9 +139,9 @@ class behat_mod_workshep extends behat_base {
      * @param string $reviewer
      */
     public function i_should_see_grade_for_workshep_participant_set_by_peer($grade, $participant, $reviewer) {
-        $participantliteral = $this->getSession()->getSelectorsHandler()->xpathLiteral($participant);
-        $reviewerliteral = $this->getSession()->getSelectorsHandler()->xpathLiteral($reviewer);
-        $gradeliteral = $this->getSession()->getSelectorsHandler()->xpathLiteral($grade);
+        $participantliteral = behat_context_helper::escape($participant);
+        $reviewerliteral = behat_context_helper::escape($reviewer);
+        $gradeliteral = behat_context_helper::escape($grade);
         $participantselector = "contains(concat(' ', normalize-space(@class), ' '), ' participant ') ".
                 "and contains(.,$participantliteral)";
         $trxpath = "//table/tbody/tr[td[$participantselector]]";

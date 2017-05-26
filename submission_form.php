@@ -64,6 +64,9 @@ class workshep_submission_form extends moodleform {
         $mform->addElement('hidden', 'example', 0);
         $mform->setType('example', PARAM_INT);
 
+        $mform->addElement('hidden', 'sid', $current->authorid);
+        $mform->setType('sid', PARAM_INT);
+
         $this->add_action_buttons();
 
         $this->set_data($current);
@@ -83,8 +86,30 @@ class workshep_submission_form extends moodleform {
                       JOIN {modules} m ON (m.name = 'workshep' AND m.id = cm.module)
                      WHERE cm.id = ? AND s.authorid = ? AND s.example = 0";
 
-            if ($DB->count_records_sql($sql, array($data['cmid'], $USER->id))) {
+            if (!isset($data['sid']) and !$data['sid'] and $DB->count_records_sql($sql, array($data['cmid'], $USER->id))) {
                 $errors['title'] = get_string('err_multiplesubmissions', 'mod_workshep');
+            }
+        }
+
+        if (isset($data['attachment_filemanager']) and isset($this->_customdata['workshep']->submissionfiletypes)) {
+            $whitelist = workshep::normalize_file_extensions($this->_customdata['workshep']->submissionfiletypes);
+            if ($whitelist) {
+                $draftfiles = file_get_drafarea_files($data['attachment_filemanager']);
+                if ($draftfiles) {
+                    $wrongfiles = array();
+                    foreach ($draftfiles->list as $file) {
+                        if (!workshep::is_allowed_file_type($file->filename, $whitelist)) {
+                            $wrongfiles[] = $file->filename;
+                        }
+                    }
+                    if ($wrongfiles) {
+                        $a = array(
+                            'whitelist' => workshep::clean_file_extensions($whitelist),
+                            'wrongfiles' => implode(', ', $wrongfiles),
+                        );
+                        $errors['attachment_filemanager'] = get_string('err_wrongfileextension', 'mod_workshep', $a);
+                    }
+                }
             }
         }
 

@@ -38,28 +38,28 @@ if($form->exportValue('clear'))
 	$users = $DB->get_records_list('user','username',$usernames,'','username,id,firstname,lastname');
 
 	$failures = array(); // username => reason
-    
+
 	foreach($csv as $a) {
 		if(!empty($a)) {
 			$reviewee = trim($a[0]);
 			$reviewers = array_slice($a,1);
-			
+
 			if (empty($reviewee)) continue;
 			if (empty($reviewers)) continue;
-			
+
 			if (empty($users[$reviewee])) {
-                
+
 				$failures[$reviewee] = "error::No user for username $reviewee";
 				continue;
 			}
-            
+
 			$submission = $workshep->get_submission_by_author($users[$reviewee]->id);
-			
+
 			if ($submission === false) {
 				$failures[$reviewee] = "error::No submission for {$users[$reviewee]->firstname} {$users[$reviewee]->lastname} ($reviewee)";
 				continue;
 			}
-			
+
 			foreach($reviewers as $i) {
 				if (empty($i)) continue;
 				if (empty($users[$i])) {

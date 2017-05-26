@@ -15,35 +15,23 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Keeps track of upgrades to the workshep comments grading strategy
+ * Search area for mod_workshep activities.
  *
- * @package    workshepform_comments
- * @copyright  2010 David Mudrak <david@moodle.com>
+ * @package    mod_workshep
+ * @copyright  2015 David Monllao {@link http://www.davidmonllao.com}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+namespace mod_workshep\search;
 
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Performs upgrade of the database structure and data
+ * Search area for mod_workshep activities.
  *
- * @param int $oldversion the version we are upgrading from
- * @return bool true
+ * @package    mod_workshep
+ * @copyright  2015 David Monllao {@link http://www.davidmonllao.com}
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-function xmldb_workshepform_comments_upgrade($oldversion) {
-    global $CFG;
-
-    // Moodle v2.8.0 release upgrade line.
-    // Put any upgrade step following this.
-
-    // Moodle v2.9.0 release upgrade line.
-    // Put any upgrade step following this.
-
-    // Moodle v3.0.0 release upgrade line.
-    // Put any upgrade step following this.
-
-    // Moodle v3.1.0 release upgrade line.
-    // Put any upgrade step following this.
-
-    return true;
+class activity extends \core_search\area\base_activity {
 }

@@ -277,7 +277,7 @@ echo $output->render($workshep->prepare_submission($submission, has_capability('
 // for evaluating the assessment
 if (trim($workshep->instructreviewers)) {
     $instructions = file_rewrite_pluginfile_urls($workshep->instructreviewers, 'pluginfile.php', $PAGE->context->id,
-        'mod_workshep', 'instructreviewers', 0, workshep::instruction_editors_options($PAGE->context));
+        'mod_workshep', 'instructreviewers', null, workshep::instruction_editors_options($PAGE->context));
     print_collapsible_region_start('', 'workshep-viewlet-instructreviewers', get_string('instructreviewers', 'workshep'));
     echo $output->box(format_text($instructions, $workshep->instructreviewersformat, array('overflowdiv'=>true)), array('generalbox', 'instructions'));
     print_collapsible_region_end();
@@ -324,7 +324,7 @@ if ($isreviewer) {
         'showweight'    => true,
     );
     $displayassessment = $workshep->prepare_assessment($assessment, $mform, $options);
-	
+
     if ($isauthor and $workshep->submitterflagging) {
         if ($assessment->submitterflagged == 1) {
             //unflag
@@ -334,7 +334,7 @@ if ($isreviewer) {
             $displayassessment->add_action($workshep->flag_url($assessment->id, $PAGE->url), get_string('flagassessment', 'workshep'));
         }
     }
-	
+
     echo $output->render($displayassessment);
 }
 

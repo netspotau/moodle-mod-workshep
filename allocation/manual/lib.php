@@ -135,7 +135,7 @@ class workshep_manual_allocator implements workshep_allocator {
             }
             break;
         }
-        
+
         if(!empty($SESSION->workshep_upload_messages)) {
             $messages = $SESSION->workshep_upload_messages;
             unset($SESSION->workshep_upload_messages);
@@ -150,11 +150,11 @@ class workshep_manual_allocator implements workshep_allocator {
             } else {
                 $result->set_status(workshep_allocation_result::STATUS_EXECUTED);
             }
-            
+
         } else {
             $result->set_status(workshep_allocation_result::STATUS_VOID);
         }
-        
+
         return $result;
     }
 
@@ -376,7 +376,7 @@ class workshep_manual_allocator implements workshep_allocator {
     public static function delete_instance($workshepid) {
         return;
     }
-    
+
     public static function teammode_class() {
         return "workshep_teammode_manual_allocator"; //no forward dec, so this class isn't yet declared
     }

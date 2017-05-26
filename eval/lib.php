@@ -55,7 +55,7 @@ abstract class workshep_evaluation {
 
         return new workshep_evaluation_settings_form($actionurl, $customdata, 'post', '', $attributes);
     }
-    
+
     abstract public function get_settings();
 
     /**
@@ -97,5 +97,5 @@ class workshep_evaluation_settings_form extends moodleform {
      */
     protected function definition_sub() {
     }
-    
+
 }

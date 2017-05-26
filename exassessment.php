@@ -102,6 +102,17 @@ if ($mform->is_cancelled()) {
     // Let the grading strategy subplugin save its data.
     $rawgrade = $strategy->save_assessment($assessment, $data);
 
+    // Run the auto calibration scores if enabled.
+    if ($workshep->usecalibration && $workshep->autorecalculate) {
+        $plugindefaults = get_config('workshepcalibration_examples');
+        $calibration = $workshep->calibration_instance();
+        $calibrationdata = new stdclass();
+        $calibrationdata->comparison = $workshep->calibrationcomparison;
+        $calibrationdata->consistency = $workshep->calibrationconsistency;
+        $calibration->calculate_calibration_scores($calibrationdata);   // updates 'gradinggrade' in {workshep_assessments}
+        $workshep->log('update calibration scores');
+    }
+
     // Store the data managed by the workshep core.
     $coredata = (object)array('id' => $assessment->id);
     if (isset($data->feedbackauthor_editor)) {
@@ -124,7 +135,7 @@ if ($mform->is_cancelled()) {
         // Remember the last one who edited the reference assessment.
         $coredata->reviewerid = $USER->id;
     }
-    // Update the assessment data if there is something other than just the 'id'.  
+    // Update the assessment data if there is something other than just the 'id'.
     if (count((array)$coredata) > 1 ) {
         $DB->update_record('workshep_assessments', $coredata);
     }
@@ -155,7 +166,7 @@ echo $output->render($workshep->prepare_example_submission(($example)));
 // for evaluating the assessment
 if (trim($workshep->instructreviewers)) {
     $instructions = file_rewrite_pluginfile_urls($workshep->instructreviewers, 'pluginfile.php', $PAGE->context->id,
-        'mod_workshep', 'instructreviewers', 0, workshep::instruction_editors_options($PAGE->context));
+        'mod_workshep', 'instructreviewers', null, workshep::instruction_editors_options($PAGE->context));
     print_collapsible_region_start('', 'workshep-viewlet-instructreviewers', get_string('instructreviewers', 'workshep'));
     echo $output->box(format_text($instructions, $workshep->instructreviewersformat, array('overflowdiv'=>true)), array('generalbox', 'instructions'));
     print_collapsible_region_end();
@@ -182,7 +193,7 @@ if ($canmanage and $assessment->weight == 1) {
     $assessment = $workshep->prepare_example_assessment($assessment, $mform, $options);
     $assessment->title = get_string('assessmentbyyourself', 'workshep');
     echo $output->render($assessment);
-    
+
     if(!$workshep->examplesreassess and !empty($assessment->grade)) {
         echo $output->single_button($workshep->view_url(), get_string('continue', 'moodle'));
     }

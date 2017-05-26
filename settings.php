@@ -88,7 +88,7 @@ if ($ADMIN->fulltree) {
             include($settingsfile);
         }
     }
-    
+
     // include the settings of grading evaluation subplugins
     $calibrations = get_plugin_list('workshepcalibration');
     foreach ($calibrations as $calibration => $path) {

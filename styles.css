@@ -95,7 +95,11 @@
 .path-mod-workshep .submission-full .header .userdate {
     margin: 0px 0px 0px 80px;
 }
-
+.dir-rtl.path-mod-workshep .submission-full .header .title,
+.dir-rtl.path-mod-workshep .submission-full .header .author,
+.dir-rtl.path-mod-workshep .submission-full .header .userdate {
+    margin: 0px 80px 0px 0px;
+}
 .path-mod-workshep .submission-full.anonymous .header .title,
 .path-mod-workshep .submission-full.anonymous .header .author,
 .path-mod-workshep .submission-full.anonymous .header .userdate {
@@ -127,6 +131,10 @@
     top: 3px;
     left: 3px;
 }
+.dir-rtl.path-mod-workshep .submission-full .header .author .picture{
+    right:3px;
+    left:auto;
+}
 
 .path-mod-workshep .submission-full .content,
 .path-mod-workshep .submission-full .attachments,
@@ -135,7 +143,7 @@
 }
 
 .path-mod-workshep .submission-full .wordcount {
-  font-style: italic; 
+  font-style: italic;
   color: #BBB;
 }
 
@@ -309,6 +317,9 @@
     min-height: 16px;
     margin: .3em 0;
 }
+.dir-rtl.path-mod-workshep .userplan tr.phasetasks li {
+    background-position: top right;
+}
 
 .path-mod-workshep .userplan tr.phasetasks li.completed {
     background-image: url([[pix:mod_workshep|userplan/task-done]]);
@@ -331,10 +342,16 @@
 .path-mod-workshep .userplan tr.phasetasks .title {
     padding: 0px 10px 0px 20px;
 }
+.dir-rtl.path-mod-workshep .userplan tr.phasetasks .title {
+    padding: 0px 20px 0px 10px;
+}
 
 .path-mod-workshep .userplan tr.phasetasks .details {
     padding: 0px 10px 0px 25px;
     font-size: 80%;
+}
+.dir-rtl.path-mod-workshep .userplan tr.phasetasks .details {
+    padding: 0px 25px 0px 10px;
 }
 
 /**
@@ -361,6 +378,12 @@
 .path-mod-workshep .assessment-full .header .grade,
 .path-mod-workshep .assessment-full .header .weight {
     margin: 0px 0px 0px 40px;
+}
+.dir-rtl.path-mod-workshep .assessment-full .header .title,
+.dir-rtl.path-mod-workshep .assessment-full .header .reviewer,
+.dir-rtl.path-mod-workshep .assessment-full .header .grade,
+.dir-rtl.path-mod-workshep .assessment-full .header .weight {
+    margin: 0px 40px 0px 0px;
 }
 
 .path-mod-workshep .assessment-full.anonymous .header .title,
@@ -394,6 +417,10 @@
     position: absolute;
     top: 3px;
     left: 3px;
+}
+.dir-rtl.path-mod-workshep .assessment-full .header .reviewer .picture {
+    right:3px;
+    left:auto;
 }
 
 .path-mod-workshep .assessment-full .header .actions {
@@ -639,6 +666,15 @@
     text-align: center;
 }
 
+.path-mod-workshep .lastmodified {
+    line-height: 1.0em;
+}
+
+.path-mod-workshep .nothingfound {
+    font-size: 150%;
+    color: #FF4500;
+}
+
 .path-mod-workshep .workshep-risk-dataloss { vertical-align: text-bottom; }
 
 .path-mod-workshep .no-competent-reviewers {
@@ -759,4 +795,11 @@
 
 .path-mod-workshep #workshep-viewlet-flagging .loading::before {
 	content: url([[pix:mod_workshep|loading]]);
+}
+
+/* Team Evaluation */
+
+.path-mod-workshep .teamevalreport-feedback-container td.feedback {
+    border:none;
+    margin:none;
 }

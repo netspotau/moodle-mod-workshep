@@ -39,7 +39,7 @@ class workshep_random_allocator implements workshep_allocator {
 
     /** constants used to pass status messages between init() and ui() */
     const MSG_SUCCESS       = 1;
-    
+
     //some consts to differentiate teammode and normal mode
     protected $form_class = 'workshep_random_allocator_form';
 
@@ -562,7 +562,7 @@ class workshep_random_allocator implements workshep_allocator {
                             }
                             $targetgroup = $this->get_element_with_lowest_workload($trygroups);
                         }
-                        
+
                         if ($targetgroup === false) {
                             $keeptrying = false;
                             $result->log(get_string('resultnotenoughpeers', 'workshepallocation_random'), 'error', 1);
@@ -700,7 +700,7 @@ class workshep_random_allocator implements workshep_allocator {
             $newallocations = array_diff_key($newallocations, array_flip($foundat));
         }
     }
-    
+
     /**
     * This exists because teammode treats options slightly differently from normal mode
     *
@@ -714,11 +714,11 @@ class workshep_random_allocator implements workshep_allocator {
         $options['excludesamegroup'] = $settings->excludesamegroup;
         return $options;
     }
-    
+
     protected function get_group_mode() {
         return groups_get_activity_groupmode($this->workshep->cm, $this->workshep->course);
     }
-    
+
     protected function get_authors() {
         return $this->workshep->get_grouped($this->workshep->get_potential_authors());
     }
@@ -726,7 +726,7 @@ class workshep_random_allocator implements workshep_allocator {
     public static function teammode_class() {
         return "workshep_teammode_random_allocator";
     }
-    
+
     public function post_allocation_redirect() {
         return $this->workshep->allocation_url('manual');
     }

@@ -41,27 +41,27 @@ $workshep = new workshep($workshep, $cm, $course);
 $flagged_assessments = $workshep->get_flagged_assessments();
 
 if ($_POST) {
-	
+
 	foreach($flagged_assessments as $a) {
 		if (isset($_POST['assessment_'.$a->id])) {
-			
+
 			$record = new stdClass();
 			$record->id = $a->id;
 			$record->submitterflagged = -1;
-			
+
 			$weight = $_POST['assessment_'.$a->id];
 			if ($weight == 0) {
 				$record->weight = 0;
 			}
-			
+
             // TODO: MAKE SURE YOU UNCOMMENT THIS LINE BEFORE COMMITTING
             // $DB->update_record('workshep_assessments', $record);
-			
+
 		}
 	}
-	
+
 	redirect($workshep->aggregate_url());
-	
+
 }
 
 $PAGE->set_url($workshep->flagged_assessments_url());
@@ -94,11 +94,11 @@ foreach($flagged_assessments as $assessment) {
 	$submission->contentformat = $assessment->submissionformat;
 	$submission->attachment = $assessment->submissionattachment;
 	$submission->authorid = $assessment->authorid;
-		
+
     $displayassessment = $workshep->prepare_assessment_with_submission($assessment, $submission, $mform, $options);
 	echo $output->render($displayassessment);
-	
-	
+
+
 }
 
 echo $output->container(html_writer::empty_tag('input', array('type' => 'submit', 'value' => get_string('aggregategrades', 'workshep'))), 'center');

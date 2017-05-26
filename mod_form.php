@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -56,7 +55,7 @@ class mod_workshep_mod_form extends moodleform_mod {
      */
     public function definition() {
         global $CFG, $DB, $PAGE;
-		
+
 		$PAGE->requires->jquery();
 		$PAGE->requires->js('/mod/workshep/mod_form.js');
 		$PAGE->requires->js_function_call('init');
@@ -69,7 +68,7 @@ class mod_workshep_mod_form extends moodleform_mod {
 
         // Workshop name
         $label = get_string('workshepname', 'workshep');
-        $mform->addElement('text', 'name', $label, array('size'=>'64'));
+        $mform->addElement('text', 'name', $label, array('size' => '64'));
         if (!empty($CFG->formatstringstriptags)) {
             $mform->setType('name', PARAM_TEXT);
         } else {
@@ -104,8 +103,7 @@ class mod_workshep_mod_form extends moodleform_mod {
         $mform->addElement('text', 'submissiongradepass', get_string('gradetopasssubmission', 'workshep'));
         $mform->addHelpButton('submissiongradepass', 'gradepass', 'grades');
         $mform->setDefault('submissiongradepass', '');
-        $mform->setType('submissiongradepass', PARAM_FLOAT);
-        $mform->addRule('submissiongradepass', null, 'numeric', null, 'client');
+        $mform->setType('submissiongradepass', PARAM_RAW);
 
         $label = get_string('gradinggrade', 'workshep');
         $mform->addGroup(array(
@@ -118,11 +116,10 @@ class mod_workshep_mod_form extends moodleform_mod {
         $mform->addElement('text', 'gradinggradepass', get_string('gradetopassgrading', 'workshep'));
         $mform->addHelpButton('gradinggradepass', 'gradepass', 'grades');
         $mform->setDefault('gradinggradepass', '');
-        $mform->setType('gradinggradepass', PARAM_FLOAT);
-        $mform->addRule('gradinggradepass', null, 'numeric', null, 'client');
+        $mform->setType('gradinggradepass', PARAM_RAW);
 
         $options = array();
-        for ($i=5; $i>=0; $i--) {
+        for ($i = 5; $i >= 0; $i--) {
             $options[$i] = $i;
         }
         $label = get_string('gradedecimals', 'workshep');
@@ -137,25 +134,33 @@ class mod_workshep_mod_form extends moodleform_mod {
                             workshep::instruction_editors_options($this->context));
 
         $options = array();
-        for ($i=7; $i>=0; $i--) {
+        for ($i = 7; $i >= 0; $i--) {
             $options[$i] = $i;
         }
         $label = get_string('nattachments', 'workshep');
         $mform->addElement('select', 'nattachments', $label, $options);
         $mform->setDefault('nattachments', 1);
 
+        $label = get_string('allowedfiletypesforsubmission', 'workshep');
+        $mform->addElement('text', 'submissionfiletypes', $label, array('maxlength' => 255, 'size' => 64));
+        $mform->addHelpButton('submissionfiletypes', 'allowedfiletypesforsubmission', 'workshep');
+        $mform->setType('submissionfiletypes', PARAM_TEXT);
+        $mform->addRule('submissionfiletypes', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
+        $mform->disabledIf('submissionfiletypes', 'nattachments', 'eq', 0);
+
         $options = get_max_upload_sizes($CFG->maxbytes, $this->course->maxbytes, 0, $workshepconfig->maxbytes);
         $mform->addElement('select', 'maxbytes', get_string('maxbytes', 'workshep'), $options);
         $mform->setDefault('maxbytes', $workshepconfig->maxbytes);
+        $mform->disabledIf('maxbytes', 'nattachments', 'eq', 0);
 
         $label = get_string('latesubmissions', 'workshep');
         $text = get_string('latesubmissions_desc', 'workshep');
         $mform->addElement('checkbox', 'latesubmissions', $label, $text);
         $mform->addHelpButton('latesubmissions', 'latesubmissions', 'workshep');
-		
+
   		$numgroups = $DB->count_records('groups',array('courseid' => $this->course->id));
         $disabled = (bool)($numgroups == 0);
-        
+
         $label = get_string('teammode', 'workshep');
         if ($disabled) {
             $text = get_string('teammode_disabled','workshep');
@@ -166,13 +171,18 @@ class mod_workshep_mod_form extends moodleform_mod {
         $mform->addElement('checkbox','teammode',$label,$text,$params);
         $mform->addHelpButton('teammode','teammode','workshep');
 
+        $label = get_string('nosubmissionrequired', 'workshep');
+        $text = get_string('nosubmissionrequired_desc', 'workshep');
+        $mform->addElement('checkbox', 'nosubmissionrequired', $label, $text);
+        $mform->addHelpButton('nosubmissionrequired','nosubmissionrequired','workshep');
+
         // Assessment settings --------------------------------------------------------
         $mform->addElement('header', 'assessmentsettings', get_string('assessmentsettings', 'workshep'));
 
         $label = get_string('instructreviewers', 'workshep');
         $mform->addElement('editor', 'instructreviewerseditor', $label, null,
                             workshep::instruction_editors_options($this->context));
-                            
+
         $label = get_string('useselfassessment', 'workshep');
         $text = get_string('useselfassessment_desc', 'workshep');
         $mform->addElement('checkbox', 'useselfassessment', $label, $text);
@@ -195,6 +205,13 @@ class mod_workshep_mod_form extends moodleform_mod {
         $mform->addElement('select', 'overallfeedbackfiles', get_string('overallfeedbackfiles', 'workshep'), $options);
         $mform->setDefault('overallfeedbackfiles', 0);
         $mform->disabledIf('overallfeedbackfiles', 'overallfeedbackmode', 'eq', 0);
+
+        $label = get_string('allowedfiletypesforoverallfeedback', 'workshep');
+        $mform->addElement('text', 'overallfeedbackfiletypes', $label, array('maxlength' => 255, 'size' => 64));
+        $mform->addHelpButton('overallfeedbackfiletypes', 'allowedfiletypesforoverallfeedback', 'workshep');
+        $mform->setType('overallfeedbackfiletypes', PARAM_TEXT);
+        $mform->addRule('overallfeedbackfiletypes', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
+        $mform->disabledIf('overallfeedbackfiletypes', 'overallfeedbackfiles', 'eq', 0);
 
         $options = get_max_upload_sizes($CFG->maxbytes, $this->course->maxbytes);
         $mform->addElement('select', 'overallfeedbackmaxbytes', get_string('overallfeedbackmaxbytes', 'workshep'), $options);
@@ -227,7 +244,7 @@ class mod_workshep_mod_form extends moodleform_mod {
         $mform->disabledIf('numexamples', 'useexamples');
         $mform->setDefault('numexamples', 0);
         $mform->addHelpButton('numexamples','numexamples','workshep');
-                
+
         $label = get_string('examplescompare', 'workshep');
         $text = get_string('examplescompare_desc', 'workshep');
         $mform->addElement('checkbox', 'examplescompare', $label, $text);
@@ -242,13 +259,18 @@ class mod_workshep_mod_form extends moodleform_mod {
 
         // Calibration ----------------------------------------------------------------
         $mform->addElement('header', 'examplesubmissionssettings', get_string('calibration', 'workshep'));
-        
+
         $label = get_string('usecalibration', 'workshep');
         $mform->disabledIf('usecalibration', 'useexamples');
         $text = get_string('usecalibration_desc', 'workshep');
         $mform->addElement('checkbox', 'usecalibration', $label, $text);
         $mform->addHelpButton('usecalibration', 'usecalibration', 'workshep');
-        
+
+        $workshepcalibrationconfig = get_config('workshepcalibration_examples');
+        $label = get_string('autorecalculate', 'workshepcalibration_examples');
+        $mform->addElement('checkbox', 'autorecalculate', $label);
+        $mform->setDefault('autorecalculate', $workshepcalibrationconfig->autorecalculate);
+
         $label = get_string('calibrationphase', 'workshep');
         $values = array(
             workshep::PHASE_SETUP => get_string('beforesubmission', 'workshep'),
@@ -259,6 +281,24 @@ class mod_workshep_mod_form extends moodleform_mod {
         $mform->disabledIf('calibrationphase', 'usecalibration');
         $mform->setDefault('calibrationphase', workshep::PHASE_SUBMISSION);
         $mform->addHelpButton('calibrationphase','calibrationphase','workshep');
+
+        $options = array();
+        for ($i = 9; $i >= 1; $i--) {
+            $options[$i] = get_string('comparisonlevel' . $i, 'workshepcalibration_examples');
+        }
+        $label = get_string('comparison', 'workshepcalibration_examples');
+        $mform->addElement('select', 'calibrationcomparison', $label, $options);
+        $mform->disabledIf('calibrationcomparison', 'usecalibration');
+        $mform->addHelpButton('calibrationcomparison', 'comparison', 'workshepcalibration_examples');
+        $mform->setDefault('calibrationcomparison', (empty($this->current->calibrationcomparison) ?
+                                                     $workshepcalibrationconfig->accuracy : $this->current->calibrationcomparison));
+
+        $label = get_string('consistency', 'workshepcalibration_examples');
+        $mform->addElement('select', 'calibrationconsistency', $label, $options);
+        $mform->disabledIf('calibrationconsistency', 'usecalibration');
+        $mform->addHelpButton('calibrationconsistency', 'consistency', 'workshepcalibration_examples');
+        $mform->setDefault('calibrationconsistency', (empty($this->current->calibrationconsistency) ?
+                                                      $workshepcalibrationconfig->consistence : $this->current->calibrationconsistency));
 
         // Access control -------------------------------------------------------------
         $mform->addElement('header', 'accesscontrol', get_string('availability', 'core'));
@@ -285,7 +325,7 @@ class mod_workshep_mod_form extends moodleform_mod {
 
         // Common module settings, Restrict availability, Activity completion etc. ----
         $features = array('groups'=>true, 'groupings'=>true, 'groupmembersonly'=>true,
-                'outcomes'=>true, 'gradecat'=>false, 'idnumber'=>false);
+                'outcomes' => true, 'gradecat' => false, 'idnumber' => false);
 
         $this->standard_coursemodule_elements();
 
@@ -403,6 +443,17 @@ class mod_workshep_mod_form extends moodleform_mod {
     public function validation($data, $files) {
         $errors = parent::validation($data, $files);
 
+        // Validate lists of allowed extensions.
+        foreach (array('submissionfiletypes', 'overallfeedbackfiletypes') as $fieldname) {
+            if (isset($data[$fieldname])) {
+                $invalidextensions = workshep::invalid_file_extensions($data[$fieldname], array_keys(core_filetypes::get_types()));
+                if ($invalidextensions) {
+                    $errors[$fieldname] = get_string('err_unknownfileextension', 'mod_workshep',
+                        workshep::clean_file_extensions($invalidextensions));
+                }
+            }
+        }
+
         // check the phases borders are valid
         if ($data['submissionstart'] > 0 and $data['submissionend'] > 0 and $data['submissionstart'] >= $data['submissionend']) {
             $errors['submissionend'] = get_string('submissionendbeforestart', 'mod_workshep');
@@ -428,11 +479,28 @@ class mod_workshep_mod_form extends moodleform_mod {
             }
         }
 
-        if ($data['submissiongradepass'] > $data['grade']) {
-            $errors['submissiongradepass'] = get_string('gradepassgreaterthangrade', 'grades', $data['grade']);
+        // Check that the submission grade pass is a valid number.
+        if (!empty($data['submissiongradepass'])) {
+            $submissiongradefloat = unformat_float($data['submissiongradepass'], true);
+            if ($submissiongradefloat === false) {
+                $errors['submissiongradepass'] = get_string('err_numeric', 'form');
+            } else {
+                if ($submissiongradefloat > $data['grade']) {
+                    $errors['submissiongradepass'] = get_string('gradepassgreaterthangrade', 'grades', $data['grade']);
+                }
+            }
         }
-        if ($data['gradinggradepass'] > $data['gradinggrade']) {
-            $errors['gradinggradepass'] = get_string('gradepassgreaterthangrade', 'grades', $data['gradinggrade']);
+
+        // Check that the grade pass is a valid number.
+        if (!empty($data['gradinggradepass'])) {
+            $gradepassfloat = unformat_float($data['gradinggradepass'], true);
+            if ($gradepassfloat === false) {
+                $errors['gradinggradepass'] = get_string('err_numeric', 'form');
+            } else {
+                if ($gradepassfloat > $data['gradinggrade']) {
+                    $errors['gradinggradepass'] = get_string('gradepassgreaterthangrade', 'grades', $data['gradinggrade']);
+                }
+            }
         }
 
         return $errors;

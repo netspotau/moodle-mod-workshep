@@ -124,13 +124,13 @@ $csv = new csv_export_writer();
 
 function table_to_csv($headers, $table) {
     global $csv;
-    
+
     $h = array();
     foreach($headers as $k => $v) {
         $h[] = $v;
     }
     $csv->add_data($h);
-    
+
     foreach($table as $row) {
         $r = array();
         foreach($headers as $k => $v) {
@@ -162,7 +162,7 @@ $table1 = array();
 // $table1 is an enumerated array of associative arrays; a list of dicts.
 foreach($data->grades as $k => $grade) {
     $row = array();
-    
+
     if ($teammode) {
         $row['name'] = $grade->name;
     } else {
@@ -178,7 +178,7 @@ foreach($data->grades as $k => $grade) {
     if (isset($grade->submissionid)) {
         $row['submissiondate'] = userdate($submissions[$grade->submissionid]->timemodified);
     }
-    
+
     $table1[] = $row;
 }
 
@@ -205,7 +205,7 @@ foreach($examples as $ex) {
 
     $row['submittedby'] = get_string('example','workshep');
     $row['markedsubmission'] = $ex->title;
-    
+
     $total = 0;
     foreach($dimensions as $dimid => $dim) {
         $row["dim$dimid"] = round($ex->grades[$dimid]->grade,2);
@@ -220,7 +220,7 @@ foreach($examples as $ex) {
         }
         $total += $ex->grades[$dimid]->grade;
     }
-    
+
     if(isset($ex->referencefeedback)) {
         $feedback = trim(strip_tags($ex->referencefeedback));
         $feedback = str_replace("\n", "\r", $feedback);
@@ -234,7 +234,7 @@ foreach($examples as $ex) {
     }
     $row['overallmark'] = $total;
     $row['scaledmark'] = round($ex->grade, 2);
-    
+
     $table2[] = $row;
 }
 
@@ -244,20 +244,20 @@ $table2[] = array();
 foreach($assessments as $reviewerid => $a) {
     $user = $data->userinfo[$reviewerid];
     $reviewheader = array();
-    
+
     foreach($examples as $exid => $ex) {
         if(!array_key_exists($exid, $a))
             continue;
-        
+
         $row = array();
         $marks = $a[$exid];
-        
+
         $row['markeridnumber'] = $user->username;
         $row['markername'] = $user->firstname . ' ' . $user->lastname;
-        
+
         $row['submittedby'] = get_string('example','workshep');
         $row['markedsubmission'] = $ex->title;
-        
+
         $total = 0;
         foreach($dimensions as $dimid => $dim) {
             $row["dim$dimid"] = round($marks[$dimid]->grade,2);
@@ -274,7 +274,7 @@ foreach($assessments as $reviewerid => $a) {
             }
             $total += $marks[$dimid]->grade;
         }
-        
+
         if(!empty($ex->feedback[$reviewerid])) {
             $feedback = trim(strip_tags($ex->feedback[$reviewerid]));
             $feedback = str_replace("\n", "\r", $feedback);
@@ -293,20 +293,20 @@ foreach($assessments as $reviewerid => $a) {
         if($teammode) {
            $row['gradinggrade'] = $data->userinfo[$user->id]->gradinggrade;
         }
-        
+
         $table2[] = $row;
     }
-    
+
     foreach($a as $submissionid => $marks) {
-        
+
         if (!array_key_exists($submissionid, $submissions))
             continue;
-        
+
         $submission = $submissions[$submissionid];
         $row = array();
         $row['markeridnumber'] = $user->username;
         $row['markername'] = $user->firstname . ' ' . $user->lastname;
-  
+
         if($teammode) {
            $row['submittedby'] = $submission->group->name;
            $row['gradinggrade'] = $data->userinfo[$user->id]->gradinggrade;
@@ -315,9 +315,9 @@ foreach($assessments as $reviewerid => $a) {
             $row['submitteridnumber'] = $subuser->username;
             $row['submittedby'] = $subuser->firstname . ' ' . $subuser->lastname;
         }
-        
+
         $row['markedsubmission'] = $submission->title;
-        
+
         $total = 0;
         foreach($dimensions as $dimid => $dim) {
             $row["dim$dimid"] = round($marks[$dimid]->grade,2);
@@ -332,7 +332,7 @@ foreach($assessments as $reviewerid => $a) {
             }
             $total += $marks[$dimid]->grade;
         }
-        
+
         if(!empty($submissions[$submissionid]->feedback[$reviewerid])) {
             $feedback = trim(strip_tags($submissions[$submissionid]->feedback[$reviewerid]));
             $feedback = str_replace("\n", "\r", $feedback);
@@ -344,16 +344,16 @@ foreach($assessments as $reviewerid => $a) {
                 $needs_feedback = true;
             }
         }
-        
+
         $row['overallmark'] = $total;
         $row['scaledmark'] = empty($submission->gradeover) ? round($submission->grade, 2) : round($submission->gradeover, 2);
-        
+
         $table2[] = $row;
     }
-    
+
     //add a blank line
     $table2[] = array();
-} 
+}
 
 // Build our headers
 

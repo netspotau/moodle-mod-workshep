@@ -115,24 +115,14 @@ if ($id and $assess and $canassess) {
 if ($edit and $canmanage) {
     require_once(dirname(__FILE__).'/submission_form.php');
 
-    $maxfiles       = $workshep->nattachments;
-    $maxbytes       = $workshep->maxbytes;
-    $contentopts    = array(
-                        'trusttext' => true,
-                        'subdirs'   => false,
-                        'maxfiles'  => $maxfiles,
-                        'maxbytes'  => $maxbytes,
-                        'context'   => $workshep->context
-                      );
+    $example = file_prepare_standard_editor($example, 'content', $workshep->submission_content_options(),
+        $workshep->context, 'mod_workshep', 'submission_content', $example->id);
 
-    $attachmentopts = array('subdirs' => true, 'maxfiles' => $maxfiles, 'maxbytes' => $maxbytes);
-    $example        = file_prepare_standard_editor($example, 'content', $contentopts, $workshep->context,
-                                        'mod_workshep', 'submission_content', $example->id);
-    $example        = file_prepare_standard_filemanager($example, 'attachment', $attachmentopts, $workshep->context,
-                                        'mod_workshep', 'submission_attachment', $example->id);
+    $example = file_prepare_standard_filemanager($example, 'attachment', $workshep->submission_attachment_options(),
+        $workshep->context, 'mod_workshep', 'submission_attachment', $example->id);
 
-    $mform          = new workshep_submission_form($PAGE->url, array('current' => $example, 'workshep' => $workshep,
-                                                    'contentopts' => $contentopts, 'attachmentopts' => $attachmentopts));
+    $mform = new workshep_submission_form($PAGE->url, array('current' => $example, 'workshep' => $workshep,
+        'contentopts' => $workshep->submission_content_options(), 'attachmentopts' => $workshep->submission_attachment_options()));
 
     if ($mform->is_cancelled()) {
         redirect($workshep->view_url());
@@ -164,11 +154,13 @@ if ($edit and $canmanage) {
                 throw new moodle_exception('err_examplesubmissionid', 'workshep');
             }
         }
-        // save and relink embedded images and save attachments
-        $formdata = file_postupdate_standard_editor($formdata, 'content', $contentopts, $workshep->context,
-                                                      'mod_workshep', 'submission_content', $example->id);
-        $formdata = file_postupdate_standard_filemanager($formdata, 'attachment', $attachmentopts, $workshep->context,
-                                                           'mod_workshep', 'submission_attachment', $example->id);
+
+        // Save and relink embedded images and save attachments.
+        $formdata = file_postupdate_standard_editor($formdata, 'content', $workshep->submission_content_options(),
+            $workshep->context, 'mod_workshep', 'submission_content', $example->id);
+        $formdata = file_postupdate_standard_filemanager($formdata, 'attachment', $workshep->submission_attachment_options(),
+            $workshep->context, 'mod_workshep', 'submission_attachment', $example->id);
+
         if (empty($formdata->attachment)) {
             // explicit cast to zero integer
             $formdata->attachment = 0;
@@ -187,7 +179,7 @@ echo $output->heading(format_string($workshep->name), 2);
 // while reading the submitted answer
 if (trim($workshep->instructauthors)) {
     $instructions = file_rewrite_pluginfile_urls($workshep->instructauthors, 'pluginfile.php', $PAGE->context->id,
-        'mod_workshep', 'instructauthors', 0, workshep::instruction_editors_options($PAGE->context));
+        'mod_workshep', 'instructauthors', null, workshep::instruction_editors_options($PAGE->context));
     print_collapsible_region_start('', 'workshep-viewlet-instructauthors', get_string('instructauthors', 'workshep'));
     echo $output->box(format_text($instructions, $workshep->instructauthorsformat, array('overflowdiv'=>true)), array('generalbox', 'instructions'));
     print_collapsible_region_end();

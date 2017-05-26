@@ -32,7 +32,7 @@ defined('MOODLE_INTERNAL') || die();
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class mod_workshep_renderer extends plugin_renderer_base {
-    
+
     ////////////////////////////////////////////////////////////////////////////
     // External API - methods to render workshep renderable components
     ////////////////////////////////////////////////////////////////////////////
@@ -139,11 +139,11 @@ class mod_workshep_renderer extends plugin_renderer_base {
 
         return $o;
     }
-	
+
 	protected function helper_submission_content($submission) {
-		
+
 		$o = '';
-		
+
         $content = file_rewrite_pluginfile_urls($submission->content, 'pluginfile.php', $this->page->context->id,
                                                         'mod_workshep', 'submission_content', $submission->id);
         $content = format_text($content, $submission->contentformat, array('overflowdiv'=>true));
@@ -161,7 +161,7 @@ class mod_workshep_renderer extends plugin_renderer_base {
         $o .= $this->output->container($this->helper_submission_wordcount($content), 'wordcount');
 
         $o .= $this->helper_submission_attachments($submission->id, 'html');
-		
+
 		return $o;
 	}
 
@@ -347,16 +347,23 @@ class mod_workshep_renderer extends plugin_renderer_base {
      * @param workshep_user_plan $plan prepared for the user
      * @return string html code to be displayed
      */
-    protected function render_workshep_user_plan(workshep_user_plan $plan) {        
+    protected function render_workshep_user_plan(workshep_user_plan $plan) {
         $width = 100 / count($plan->phases);
         $table = new html_table();
         $table->attributes['class'] = 'userplan';
+        $table->attributes['role'] = 'section';
+        $numberofphases = count($plan->phases);
+        $table->attributes['aria-label'] = get_string('userplanaccessibilitytitle', 'workshep', $numberofphases);
         $table->head = array();
         $table->colclasses = array();
         $row = new html_table_row();
         $row->attributes['class'] = 'phasetasks';
         foreach ($plan->phases as $phasecode => $phase) {
             $title = html_writer::tag('span', $phase->title);
+            if ($phase->active) {
+                $title .= ' ' . html_writer::tag('span', get_string('userplancurrentphase', 'workshep'),
+                    array('class' => 'accesshide'));
+            }
             $actions = '';
             foreach ($phase->actions as $action) {
                 switch ($action->type) {
@@ -489,21 +496,29 @@ class mod_workshep_renderer extends plugin_renderer_base {
             $sortbyname = $sortbyfirstname . ' / ' . $sortbylastname;
         }
 
+        $sortbysubmisstiontitle = $this->helper_sortable_heading(get_string('submission', 'workshep'), 'submissiontitle',
+                $options->sortby, $options->sorthow);
+        $sortbysubmisstionlastmodified = $this->helper_sortable_heading(get_string('submissionlastmodified', 'workshep'),
+                'submissionmodified', $options->sortby, $options->sorthow);
+        $sortbysubmisstion = $sortbysubmisstiontitle . ' / ' . $sortbysubmisstionlastmodified;
+
         $table->head = array();
         $table->head[] = $sortbyname;
-        $table->head[] = $this->helper_sortable_heading(get_string('submission', 'workshep'), 'submissiontitle',
-                $options->sortby, $options->sorthow);
-        $table->head[] = $this->helper_sortable_heading(get_string('receivedgrades', 'workshep'));
-        if ($options->showsubmissiongrade) {
-            $table->head[] = $this->helper_sortable_heading(get_string('submissiongradeof', 'workshep', $data->maxgrade),
-                    'submissiongrade', $options->sortby, $options->sorthow);
-        }
-        $table->head[] = $this->helper_sortable_heading(get_string('givengrades', 'workshep'));
-        if ($options->showgradinggrade) {
-            $table->head[] = $this->helper_sortable_heading(get_string('gradinggradeof', 'workshep', $data->maxgradinggrade),
-                    'gradinggrade', $options->sortby, $options->sorthow);
-        }
+        $table->head[] = $sortbysubmisstion;
 
+        // If we are in submission phase ignore the following headers (columns).
+        if ($options->workshepphase != workshep::PHASE_SUBMISSION) {
+            $table->head[] = $this->helper_sortable_heading(get_string('receivedgrades', 'workshep'));
+            if ($options->showsubmissiongrade) {
+                $table->head[] = $this->helper_sortable_heading(get_string('submissiongradeof', 'workshep', $data->maxgrade),
+                        'submissiongrade', $options->sortby, $options->sorthow);
+            }
+            $table->head[] = $this->helper_sortable_heading(get_string('givengrades', 'workshep'));
+            if ($options->showgradinggrade) {
+                $table->head[] = $this->helper_sortable_heading(get_string('gradinggradeof', 'workshep', $data->maxgradinggrade),
+                        'gradinggrade', $options->sortby, $options->sorthow);
+            }
+        }
         $table->rowclasses  = array();
         $table->colclasses  = array();
         $table->data        = array();
@@ -553,6 +568,13 @@ class mod_workshep_renderer extends plugin_renderer_base {
                     $cell->attributes['class'] = 'submission';
                     $row->cells[] = $cell;
                 }
+
+                // If we are in submission phase ignore the following columns.
+                if ($options->workshepphase == workshep::PHASE_SUBMISSION) {
+                    $table->data[] = $row;
+                    continue;
+                }
+
                 // column #3 - received grades
                 if ($tr % $spanreceived == 0) {
                     $idx = intval($tr / $spanreceived);
@@ -599,7 +621,7 @@ class mod_workshep_renderer extends plugin_renderer_base {
                     } else {
                         $cell->attributes['class'] .= ' notnull';
                     }
-                    
+
                     $row->cells[] = $cell;
                 }
                 // column #6 - total grade for assessment
@@ -877,9 +899,9 @@ class mod_workshep_renderer extends plugin_renderer_base {
         $o .= $this->output->container_end(); // header
 
 		if ($assessment->submission) {
-			
+
 			$o .= $this->container($this->helper_submission_content($assessment->submission), 'submission-full');
-		
+
 		}
 
         if (!is_null($assessment->form)) {
@@ -910,7 +932,7 @@ class mod_workshep_renderer extends plugin_renderer_base {
         }
 
 		// Handle the flagged assessment resolution options
-		
+
 		// This is raw HTML because it's intended for use within a larger form
 		// TODO: Localisation
 		if ($assessment->resolution) {
@@ -921,7 +943,7 @@ class mod_workshep_renderer extends plugin_renderer_base {
 </div>
 HTML;
 		}
-        
+
         $o .= $this->output->container_end(); // main wrapper
 
         return $o;
@@ -946,22 +968,22 @@ HTML;
     protected function render_workshep_example_reference_assessment(workshep_example_reference_assessment $assessment) {
         return $this->render_workshep_assessment($assessment);
     }
-    
+
     /// CALIBRATION REPORT
-    
+
     protected function helper_calibration_report_reviewer(stdclass $reviewer) {
         $out  = $this->output->user_picture($reviewer, array('courseid' => $this->page->course->id, 'size' => 35));
         $out .= html_writer::tag('span', fullname($reviewer));
 
         return $out;
     }
-    
+
     protected function render_workshep_calibration_report(workshep_calibration_report $report) {
-        
+
         $options = $report->options;
-        
+
         $table = new html_table();
-        
+
         $sortbyfirstname = $this->helper_sortable_heading(get_string('firstname'), 'firstname', $options->sortby, $options->sorthow);
         $sortbylastname = $this->helper_sortable_heading(get_string('lastname'), 'lastname', $options->sortby, $options->sorthow);
         if (self::fullname_format() == 'lf') {
@@ -973,28 +995,28 @@ HTML;
         $table->head = array();
         $table->head[] = $sortbyname;
         $table->head[] = $this->helper_sortable_heading(get_string('score', 'workshep'), 'score', $options->sortby, $options->sorthow);
-        
+
         foreach($report->reviewers as $reviewer) {
             $row = new html_table_row();
-            
+
             $reviewercell = new html_table_cell();
             $reviewercell->text = $this->helper_calibration_report_reviewer($reviewer, $report->reviewers);
-            
+
             $row->cells[] = $reviewercell;
-            
+
             $scorecell = new html_table_cell();
             $scorecell->text = isset($report->scores[$reviewer->id]) ? sprintf("%1.2f%%", $report->scores[$reviewer->id]) : get_string('nocalibrationscore', 'workshep');
             if (isset($report->scores[$reviewer->id]) && isset($reviewer->calibrationlink)) {
                 $scorecell->text = html_writer::link($reviewer->calibrationlink, $scorecell->text);
             }
-            
+
             $row->cells[] = $scorecell;
-            
+
             $table->data[] = $row;
         }
-        
+
         return html_writer::table($table);
-        
+
     }
 
     /**
@@ -1008,36 +1030,36 @@ HTML;
         $o = '';
 
         if (($assessment instanceof workshep_example_assessment) && isset($assessment->reference_assessment)) {
-            
+
             $yours = $this->inner_overall_feedback($assessment);
             $ref = $this->inner_overall_feedback($assessment->reference_assessment);
-            
+
             if (( $yours === '' ) && ( $ref === '' )) {
                 $o = '';
             } else {
-            
+
                 $o .= $this->output->container_start('center');
 
                 $o .= $this->output->container_start('inline-block');
                 $o .= $this->output->heading(get_string('assessmentreference','workshep'), 2, 'reference-assessment');
-            
+
                 $o .= $this->inner_overall_feedback($assessment->reference_assessment);
-            
+
                 $o .= $this->output->container_end();
 
                 $o .= $this->output->container_start('inline-block');
                 $o .= $this->output->heading(get_string('assessmentbyfullname','workshep', fullname($assessment->reviewer)), 2, 'example-assessment');
-            
+
                 $o .= $this->inner_overall_feedback($assessment);
-            
+
                 $o .= $this->output->container_end();
                 $o .= $this->output->container_end();
             }
-            
+
         } else {
             $o = $this->inner_overall_feedback($assessment);
         }
-        
+
         if ($o === '') {
             return '';
         }
@@ -1048,7 +1070,7 @@ HTML;
 
         return $o;
     }
-    
+
     protected function inner_overall_feedback(workshep_assessment $assessment) {
         $content = $assessment->get_overall_feedback_content();
 
@@ -1095,7 +1117,7 @@ HTML;
         if ($o === '') {
             return '';
         }
-        
+
         return $o;
     }
 
@@ -1204,7 +1226,7 @@ HTML;
             $type       = $file->get_mimetype();
             $image      = $this->output->pix_icon(file_file_icon($file), get_mimetype_description($file), 'moodle', array('class' => 'icon'));
 
-            $linkhtml   = html_writer::link($fileurl, $image) . substr($filepath, 1) . html_writer::link($fileurl, $filename);
+            $linkhtml   = html_writer::link($fileurl, $image . substr($filepath, 1) . $filename);
             $linktxt    = "$filename [$fileurl]";
 
             if ($format == 'html') {
@@ -1346,6 +1368,9 @@ HTML;
             $url = new moodle_url('/mod/workshep/submission.php',
                                   array('cmid' => $this->page->context->instanceid, 'id' => $participant->submissionid));
             $out = html_writer::link($url, format_string($participant->submissiontitle), array('class'=>'title'));
+
+            $lastmodified = get_string('userdatemodified', 'workshep', userdate($participant->submissionmodified));
+            $out .= html_writer::tag('div', $lastmodified, array('class' => 'lastmodified'));
         }
 
         return $out;

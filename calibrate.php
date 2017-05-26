@@ -1,5 +1,5 @@
 <?php
-    
+
 require_once(dirname(dirname(dirname(__FILE__))).'/config.php');
 require_once(dirname(__FILE__).'/locallib.php');
 
@@ -25,6 +25,12 @@ $calibration = $workshep->calibration_instance();
 $settingsform = $calibration->get_settings_form($PAGE->url);
 
 if ($settingsdata = $settingsform->get_data()) {
+    // update the record with the changed Comparison / Consistency settings
+    $workshepsettings = array('id' => $workshep->id,
+                              'calibrationcomparison' => $settingsdata->comparison,
+                              'calibrationconsistency' => $settingsdata->consistency);
+    $DB->update_record('workshep', $workshepsettings);
+
     $calibration->calculate_calibration_scores($settingsdata);   // updates 'gradinggrade' in {workshep_assessments}
     $workshep->log('update calibration scores');
 }

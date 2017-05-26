@@ -121,15 +121,15 @@ class workshep_best_evaluation extends workshep_evaluation {
 
         return new workshep_best_evaluation_settings_form($actionurl, $customdata, 'post', '', $attributes);
     }
-    
+
     public function has_messages() {
         return false;
     }
-    
+
     public function display_messages() {
-        
+
     }
-	
+
 	public function get_settings() {
 		return $this->settings;
 	}

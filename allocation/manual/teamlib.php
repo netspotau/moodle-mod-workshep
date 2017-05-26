@@ -4,12 +4,12 @@
 //TODO: Reduce code repetition between this and workshep_manual_allocator
 
 class workshep_teammode_manual_allocator extends workshep_manual_allocator {
-    
+
     public function init() {
         global $PAGE, $SESSION;
 
         $mode = optional_param('mode', 'display', PARAM_ALPHA);
-        
+
         $result = new workshep_allocation_result($this);
 
         switch ($mode) {
@@ -77,7 +77,7 @@ class workshep_teammode_manual_allocator extends workshep_manual_allocator {
             break;
         }
 
-        
+
 
         if(!empty($SESSION->workshep_upload_messages)) {
             $messages = $SESSION->workshep_upload_messages;
@@ -96,7 +96,7 @@ class workshep_teammode_manual_allocator extends workshep_manual_allocator {
         } else {
             $result->set_status(workshep_allocation_result::STATUS_VOID);
         }
-        
+
         return $result;
     }
 
@@ -174,9 +174,9 @@ class workshep_teammode_manual_allocator extends workshep_manual_allocator {
 		// TEAMMODE :: Morgan Harris
 		// this introduces a new variable, $gradeitems, that replaces $participants in some cases
 		// basically in team mode you get a list of *groups* not people
-		
+
         list($insql, $params) = $DB->get_in_or_equal(array_keys($participants));
-        
+
         $groupingsql = '';
         $params2 = array();
         if($this->workshep->cm->groupingid) {
@@ -184,7 +184,7 @@ class workshep_teammode_manual_allocator extends workshep_manual_allocator {
             list($groupingsql, $params2) = $DB->get_in_or_equal(array_keys($groupinggroups));
             $groupingsql = " AND g.id $groupingsql";
         }
-        
+
 		$sql = <<<SQL
 SELECT g.id, g.name
 FROM {groups} g
@@ -195,7 +195,7 @@ ORDER BY g.name
 SQL;
 
 		$rslt = $DB->get_records_sql($sql, array_merge($params, $params2));
-			
+
 		$gradeitems = $rslt;
 
         $numofparticipants = count($gradeitems);  // we will need later for the pagination
@@ -216,7 +216,7 @@ SQL;
 
         // load the participants' submissions
 	    $submissions = $this->workshep->get_submissions_grouped();
-        
+
         foreach ($submissions as $submission) {
             if (!isset($userinfo[$submission->authorid])) {
                 $userinfo[$submission->authorid]            = new stdclass();
@@ -266,7 +266,7 @@ SQL;
             $allocations[$participant->id]->submissionid = null;
             $allocations[$participant->id]->reviewedby = array();
             $allocations[$participant->id]->reviewerof = array();
-            
+
         }
         unset($participants);
 
@@ -281,9 +281,9 @@ SQL;
             $allocations[$id]->userid = $submission->authorid;
 			$allgroupnames[$id] = $submission->group->name;
         }
-		
+
 		$duplicategroupnames = array_unique(array_diff_assoc($allgroupnames,array_unique($allgroupnames)));
-        
+
         foreach($reviewers as $reviewer) {
 			$id = $submissions[$reviewer->submissionid];
             $allocations[$id->group->id]->reviewedby[$reviewer->reviewerid] = $reviewer->assessmentid;
@@ -291,7 +291,7 @@ SQL;
         unset($reviewers);
 
 		unset($submissions);
-        
+
         foreach($userinfo as $k => $u) {
 	        $userinfo[$k]->groups = groups_get_all_groups($this->workshep->cm->course, $u->id, $this->workshep->cm->groupingid, 'g.id');
         }
@@ -328,11 +328,11 @@ SQL;
     public static function delete_instance($workshepid) {
         return;
     }
-    
+
     public static function teammode_class() {
         return null;
     }
-    
+
 }
 
 /**

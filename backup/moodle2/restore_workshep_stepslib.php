@@ -204,6 +204,7 @@ class restore_workshep_activity_structure_step extends restore_activity_structur
         $data->timegraded = $this->apply_date_offset($data->timegraded);
 
         $newitemid = $DB->insert_record('workshep_aggregations', $data);
+        $this->set_mapping('workshep_aggregation', $oldid, $newitemid, true);
     }
 
     protected function after_execute() {

@@ -80,25 +80,25 @@ foreach($assessments as $k => $v) {
 
     $reference = $workshep->get_assessment_by_id($references[$k]->assessmentid);
     $mformreference = $strategy->get_assessment_form($PAGE->url, 'assessment', $reference, false);
-        
+
     $mformassessment = null;
     if (!empty($v->assessmentid)) {
         $assessment = $workshep->get_assessment_by_id($v->assessmentid);
         $mformassessment = $strategy->get_assessment_form($PAGE->url, 'assessment', $assessment, false);
-        
+
         $options = array(
             'showreviewer'  => true,
             'showauthor'    => false,
             'showform'      => true,
         );
-    
+
         $exassessment = $workshep->prepare_example_assessment($assessment, $mformassessment, $options);
         $exassessment->reference_form = $mformreference;
         $exassessment->reference_assessment = new workshep_assessment($workshep, $reference);
-    
+
         echo $output->render($exassessment);
     }
-    
+
 }
 
 echo $output->single_button($workshep->view_url(),get_string('continue', 'moodle'));
