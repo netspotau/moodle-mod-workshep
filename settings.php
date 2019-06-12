@@ -88,9 +88,9 @@ if ($ADMIN->fulltree) {
             include($settingsfile);
         }
     }
-
+    
     // include the settings of grading evaluation subplugins
-    $calibrations = get_plugin_list('workshepcalibration');
+    $calibrations = core_component::get_plugin_list('workshepcalibration');
     foreach ($calibrations as $calibration => $path) {
         if (file_exists($settingsfile = $path . '/settings.php')) {
             $settings->add(new admin_setting_heading('workshepcalibrationsetting'.$evaluation,

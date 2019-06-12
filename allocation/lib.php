@@ -68,22 +68,22 @@ interface workshep_allocator {
      * @return void
      */
     public static function delete_instance($workshepid);
-
+    
     /**
      * Return the class of the teammode version of this plugin.
      */
-
+    
     public static function teammode_class();
-
+    
     /**
      * For some plugins, a redirect after allocation is desirable.
      * @return moodle_url
      */
-
+     
     //PHP has no support for optional methods.
-
+     
     //public function post_allocation_redirect();
-
+    
 }
 
 

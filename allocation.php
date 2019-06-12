@@ -65,7 +65,7 @@ if (!empty($allocators)) {
     $inactive   = array();
     $activated  = array();
     foreach ($allocators as $methodid => $methodname) {
-
+			
         $row[] = new tabobject($methodid, $workshep->allocation_url($methodid)->out(), $methodname);
         if ($methodid == $method) {
             $currenttab = $methodid;

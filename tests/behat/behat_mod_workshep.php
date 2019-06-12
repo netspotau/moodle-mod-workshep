@@ -48,10 +48,11 @@ class behat_mod_workshep extends behat_base {
     public function i_change_phase_in_workshep_to($workshepname, $phase) {
         $workshepname = $this->escape($workshepname);
         $phaseliteral = behat_context_helper::escape($phase);
-        $switchphase = behat_context_helper::escape(get_string('switchphase', 'workshep'));
+        $phasenumber = $this->get_phase_number($phase);
+        $switchphase = behat_context_helper::escape(get_string('switchphase' . $phasenumber, 'workshep'));
 
         $xpath = "//*[@class='userplan']/descendant::div[./span[contains(.,$phaseliteral)]]/".
-                "descendant-or-self::a[./img[@alt=$switchphase]]";
+                "descendant-or-self::a[./i[@title=$switchphase]]";
         $continue = $this->escape(get_string('continue'));
 
         $this->execute('behat_general::click_link', $workshepname);
@@ -60,6 +61,36 @@ class behat_mod_workshep extends behat_base {
 
         $this->execute("behat_forms::press_button", $continue);
     }
+
+    /**
+     * Translate Moodle string to phase number
+     *
+     * @param string $phase;
+     * @return int $phasenumber;
+     */
+
+    private function get_phase_number($phase) {
+        $phasenumber = 0;
+        switch ($phase) {
+            case get_string('phasesetup', 'workshep'):
+                $phasenumber = workshop::PHASE_SETUP;
+                break;
+            case get_string('phasesubmission', 'workshep'):
+                $phasenumber = workshop::PHASE_SUBMISSION;
+                break;
+            case get_string('phaseassessment', 'workshep'):
+                $phasenumber = workshop::PHASE_ASSESSMENT;
+                break;
+            case get_string('phaseevaluation', 'workshep'):
+                $phasenumber = workshop::PHASE_EVALUATION;
+                break;
+            case get_string('phaseclosed', 'workshep'):
+                $phasenumber = workshop::PHASE_CLOSED;
+                break;
+        }
+        return $phasenumber;
+    }
+
 
     /**
      * Adds or edits a student workshep submission.
@@ -71,7 +102,7 @@ class behat_mod_workshep extends behat_base {
     public function i_add_a_submission_in_workshep_as($workshepname, $table) {
         $workshepname = $this->escape($workshepname);
         $savechanges = $this->escape(get_string('savechanges'));
-        $xpath = "//div[contains(concat(' ', normalize-space(@class), ' '), ' ownsubmission ')]/descendant::input[@type='submit']";
+        $xpath = "//div[contains(concat(' ', normalize-space(@class), ' '), ' ownsubmission ')]/descendant::*[@type='submit']";
 
         $this->execute('behat_general::click_link', $workshepname);
 
@@ -90,17 +121,15 @@ class behat_mod_workshep extends behat_base {
      * @param TableNode $table data to fill the submission form with, must contain 'Title'
      */
     public function i_edit_assessment_form_in_workshep_as($workshepname, $table) {
-        $workshepname = $this->escape($workshepname);
-        $editassessmentform = $this->escape(get_string('editassessmentform', 'workshep'));
-        $saveandclose = $this->escape(get_string('saveandclose', 'workshep'));
 
         $this->execute('behat_general::click_link', $workshepname);
 
-        $this->execute('behat_general::click_link', $editassessmentform);
+        $this->execute('behat_navigation::i_navigate_to_in_current_page_administration',
+            get_string('editassessmentform', 'workshep'));
 
         $this->execute("behat_forms::i_set_the_following_fields_to_these_values", $table);
 
-        $this->execute("behat_forms::press_button", $saveandclose);
+        $this->execute("behat_forms::press_button", get_string('saveandclose', 'workshep'));
     }
 
     /**
@@ -160,4 +189,34 @@ class behat_mod_workshep extends behat_base {
         }
         $this->find('xpath', $xpath);
     }
+
+    /**
+     * Configure portfolio plugin, set value for portfolio instance
+     *
+     * @When /^I set portfolio instance "(?P<portfolioinstance_string>(?:[^"]|\\")*)" to "(?P<value_string>(?:[^"]|\\")*)"$/
+     * @param string $portfolioinstance
+     * @param string $value
+    public function i_set_portfolio_instance_to($portfolioinstance, $value) {
+
+        $rowxpath = "//table[contains(@class, 'generaltable')]//tr//td[contains(text(), '"
+            . $portfolioinstance . "')]/following-sibling::td";
+
+        $selectxpath = $rowxpath.'//select';
+        $select = $this->find('xpath', $selectxpath);
+        $select->selectOption($value);
+
+        if (!$this->running_javascript()) {
+            $this->execute('behat_general::i_click_on_in_the',
+                array(get_string('go'), "button", $rowxpath, "xpath_element")
+            );
+        }
+    }
+
+    Commented out to fix this issue:
+
+     - Step "/^I set portfolio instance "(?P<portfolioinstance_string>(?:[^"]|\\")*)" to "(?P<value_string>(?:[^"]|\\")*)"$/" is already defined in behat_mod_workshep::i_set_portfolio_instance_to()
+     - behat_mod_workshep::i_set_portfolio_instance_to()
+     - behat_mod_workshop::i_set_portfolio_instance_to()
+
+     */
 }

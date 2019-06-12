@@ -82,7 +82,7 @@ class workshep_accumulative_strategy_testcase extends advanced_testcase {
         // fixture set-up
         $this->strategy->dimensions[1003] = (object)array('grade' => '20', 'weight' => '-1');
         $grades[] = (object)array('dimensionid' => 1003, 'grade' => '20');
-        $this->setExpectedException('coding_exception');
+        $this->expectException('coding_exception');
         // exercise SUT
         $suggested = $this->strategy->calculate_peer_grade($grades);
     }
@@ -184,7 +184,7 @@ class workshep_accumulative_strategy_testcase extends advanced_testcase {
         $grades[] = (object)array('dimensionid' => 1012, 'grade' => '4.00000'); // exceeds the number of scale items
 
         // exercise SUT
-        $this->setExpectedException('coding_exception');
+        $this->expectException('coding_exception');
         $suggested = $this->strategy->calculate_peer_grade($grades);
     }
 }

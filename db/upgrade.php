@@ -37,38 +37,35 @@ defined('MOODLE_INTERNAL') || die();
 function xmldb_workshep_upgrade($oldversion) {
     global $CFG, $DB;
 
-    // Moodle v2.8.0 release upgrade line.
-    // Put any upgrade step following this.
-
-    // Moodle v2.9.0 release upgrade line.
-    // Put any upgrade step following this.
-
-    // Moodle v3.0.0 release upgrade line.
-    // Put any upgrade step following this.
-
     $dbman = $DB->get_manager();
 
-    if ($oldversion < 2016022200) {
-        // Add field submissionfiletypes to the table workshep.
-        $table = new xmldb_table('workshep');
-        $field = new xmldb_field('submissionfiletypes', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'nattachments');
+    // Automatically generated Moodle v3.2.0 release upgrade line.
+    // Put any upgrade step following this.
 
-        if (!$dbman->field_exists($table, $field)) {
-            $dbman->add_field($table, $field);
+    // Automatically generated Moodle v3.3.0 release upgrade line.
+    // Put any upgrade step following this.
+
+    // Automatically generated Moodle v3.4.0 release upgrade line.
+    // Put any upgrade step following this.
+
+    if ($oldversion < 2018042700) {
+        // Drop the old Moodle 1.x tables, thanks privacy by design for forcing me to do so finally.
+
+        $oldtables = ['workshep_old', 'workshep_elements_old', 'workshep_rubrics_old', 'workshep_submissions_old',
+            'workshep_assessments_old', 'workshep_grades_old', 'workshep_stockcomments_old', 'workshep_comments_old'];
+
+        foreach ($oldtables as $oldtable) {
+            $table = new xmldb_table($oldtable);
+
+            if ($dbman->table_exists($table)) {
+                $dbman->drop_table($table);
+            }
         }
 
-        // Add field overallfeedbackfiletypes to the table workshep.
-        $field = new xmldb_field('overallfeedbackfiletypes',
-                XMLDB_TYPE_CHAR, '255', null, null, null, null, 'overallfeedbackfiles');
-
-        if (!$dbman->field_exists($table, $field)) {
-            $dbman->add_field($table, $field);
-        }
-
-        upgrade_mod_savepoint(true, 2016022200, 'workshep');
+        upgrade_mod_savepoint(true, 2018042700, 'workshep');
     }
 
-    // Moodle v3.1.0 release upgrade line.
+    // Automatically generated Moodle v3.5.0 release upgrade line.
     // Put any upgrade step following this.
 
     if ($oldversion < 2016120600) {
@@ -113,6 +110,30 @@ function xmldb_workshep_upgrade($oldversion) {
         }
 
         upgrade_mod_savepoint(true, 2016120602, 'workshep');
+    }
+
+    if ($oldversion < 2017081601) {
+
+        $table = new xmldb_table('workshep_calibration');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
+        $table->add_field('workshepid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+        $table->add_field('score', XMLDB_TYPE_NUMBER, '10, 5', null, null, null, null, 'userid');
+        $field = new xmldb_field('score', XMLDB_TYPE_NUMBER, '10, 5', null, null, null, null, 'userid');
+
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+
+        // Conditionally launch create table for workshep_calibration
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        } else {
+            // Launch change of nullability for field score.
+            $dbman->change_field_type($table, $field);
+            $dbman->change_field_precision($table, $field);
+            $dbman->change_field_notnull($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2017081601, 'workshep');
     }
 
     return true;

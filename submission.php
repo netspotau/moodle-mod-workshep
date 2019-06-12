@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -52,6 +51,7 @@ if ($edit) {
 }
 
 if ($sid) {
+    require_capability('mod/workshep:submitonbehalfofothers', $workshep->context);
     $userid = $sid;
 } else {
     $userid = $USER->id;
@@ -59,19 +59,6 @@ if ($sid) {
 
 if ($id) { // submission is specified
     $submission = $workshep->get_submission_by_id($id);
-
-    $params = array(
-        'objectid' => $submission->id,
-        'context' => $workshep->context,
-        'courseid' => $workshep->course->id,
-        'relateduserid' => $submission->authorid,
-        'other' => array(
-            'workshepid' => $workshep->id
-        )
-    );
-
-    $event = \mod_workshep\event\submission_viewed::create($params);
-    $event->trigger();
 
 } else { // no submission specified
     if (!$submission = $workshep->get_submission_by_author($userid)) {
@@ -93,7 +80,7 @@ if ($workshep->teammode && !$ownsubmission) {
     $ownsubmission = groups_is_member($group->id,$userid);
 }
 $canviewall     = has_capability('mod/workshep:viewallsubmissions', $workshep->context);
-$cansubmit      = has_capability('mod/workshep:submit', $workshep->context);
+$cansubmit      = has_capability('mod/workshep:submit', $workshep->context) || $sid; // we've already checked you have submitonbehalfof
 $canallocate    = has_capability('mod/workshep:allocate', $workshep->context);
 $canpublish     = has_capability('mod/workshep:publishsubmissions', $workshep->context);
 $canoverride    = (($workshep->phase == workshep::PHASE_EVALUATION) and has_capability('mod/workshep:overridegrades', $workshep->context));
@@ -113,32 +100,10 @@ if ($submission->id and !$workshep->modifying_submission_allowed($userid)) {
     $editable = false;
 }
 
-if ($canviewall) {
-    // check this flag against the group membership yet
-    if (groups_get_activity_groupmode($workshep->cm) == SEPARATEGROUPS) {
-        // user must have accessallgroups or share at least one group with the submission author
-        if (!has_capability('moodle/site:accessallgroups', $workshep->context)) {
-            $usersgroups = groups_get_activity_allowed_groups($workshep->cm);
-            $authorsgroups = groups_get_all_groups($workshep->course->id, $submission->authorid, $workshep->cm->groupingid, 'g.id');
-            $sharedgroups = array_intersect_key($usersgroups, $authorsgroups);
-            if (empty($sharedgroups)) {
-                $canviewall = false;
-            }
-        }
-    }
-}
+$canviewall = $canviewall && $workshep->check_group_membership($submission->authorid);
 
-if ($editable and $workshep->useexamples and $workshep->examplesmode == workshep::EXAMPLES_BEFORE_SUBMISSION
-        and !has_capability('mod/workshep:manageexamples', $workshep->context)) {
-    // check that all required examples have been assessed by the user
-    $examples = $workshep->get_examples_for_reviewer($userid);
-    foreach ($examples as $exampleid => $example) {
-        if (is_null($example->grade)) {
-            $editable = false;
-            break;
-        }
-    }
-}
+$editable = ($editable && $workshep->check_examples_assessed_before_submission($USER->id));
+// Fixed upstream.
 $edit = ($editable and $edit);
 
 if (!$candeleteall and $ownsubmission and $editable) {
@@ -153,20 +118,6 @@ if (!$candeleteall and $ownsubmission and $editable) {
 if ($submission->id and $delete and $confirm and $deletable) {
     require_sesskey();
     $workshep->delete_submission($submission);
-
-    // Event information.
-    $params = array(
-        'context' => $workshep->context,
-        'courseid' => $workshep->course->id,
-        'relateduserid' => $submission->authorid,
-        'other' => array(
-            'submissiontitle' => $submission->title
-        )
-    );
-    $params['objectid'] = $submission->id;
-    $event = \mod_workshep\event\submission_deleted::create($params);
-    $event->add_record_snapshot('workshep', $worksheprecord);
-    $event->trigger();
 
     redirect($workshep->view_url());
 }
@@ -184,6 +135,11 @@ if ($submission->id and ($ownsubmission or $canviewall or $isreviewer)) {
     print_error('nopermissions', 'error', $workshep->view_url(), 'view or create submission');
 }
 
+if ($submission->id) {
+    // Trigger submission viewed event.
+    $workshep->set_submission_viewed($submission);
+}
+
 if ($assess and $submission->id and !$isreviewer and $canallocate and $workshep->assessing_allowed($userid)) {
     require_sesskey();
     $assessmentid = $workshep->add_allocation($submission, $userid);
@@ -199,7 +155,7 @@ if ($edit) {
     $submission = file_prepare_standard_filemanager($submission, 'attachment', $workshep->submission_attachment_options(),
         $workshep->context, 'mod_workshep', 'submission_attachment', $submission->id);
 
-    $mform = new workshep_submission_form($PAGE->url, array('current' => $submission, 'workshep' => $workshep,
+    $mform = new workshep_submission_form($PAGE->url, array('current' => $submission, 'sid' => $sid, 'workshep' => $workshep,
         'contentopts' => $workshep->submission_content_options(), 'attachmentopts' => $workshep->submission_attachment_options()));
 
     if ($mform->is_cancelled()) {
@@ -254,35 +210,11 @@ if ($edit) {
         }
         $params['objectid'] = $submission->id;
 
-        // Save and relink embedded images and save attachments.
-        $formdata = file_postupdate_standard_editor($formdata, 'content', $workshep->submission_content_options(),
-            $workshep->context, 'mod_workshep', 'submission_content', $submission->id);
+        $formdata->id = $submission->id;
+        // Creates or updates submission.
+        $submission->id = $workshep->edit_submission($formdata);
 
-        $formdata = file_postupdate_standard_filemanager($formdata, 'attachment', $workshep->submission_attachment_options(),
-            $workshep->context, 'mod_workshep', 'submission_attachment', $submission->id);
-
-        if (empty($formdata->attachment)) {
-            // explicit cast to zero integer
-            $formdata->attachment = 0;
-        }
-        // store the updated values or re-save the new submission (re-saving needed because URLs are now rewritten)
-        $DB->update_record('workshep_submissions', $formdata);
-        $event = \mod_workshep\event\submission_updated::create($params);
-        $event->add_record_snapshot('workshep', $worksheprecord);
-        $event->trigger();
-
-        // send submitted content for plagiarism detection
-        $fs = get_file_storage();
-        $files = $fs->get_area_files($workshep->context->id, 'mod_workshep', 'submission_attachment', $submission->id);
-
-        $params['other']['content'] = $formdata->content;
-        $params['other']['pathnamehashes'] = array_keys($files);
-
-        $event = \mod_workshep\event\assessable_uploaded::create($params);
-        $event->set_legacy_logdata($logdata);
-        $event->trigger();
-
-        redirect($workshep->submission_url($formdata->id));
+        redirect($workshep->submission_url($submission->id));
     }
 }
 
@@ -294,19 +226,8 @@ if (!$edit and ($canoverride or $canpublish)) {
         'overridablegrade' => $canoverride);
     $feedbackform = $workshep->get_feedbackauthor_form($PAGE->url, $submission, $options);
     if ($data = $feedbackform->get_data()) {
-        $data = file_postupdate_standard_editor($data, 'feedbackauthor', array(), $workshep->context);
-        $record = new stdclass();
-        $record->id = $submission->id;
-        if ($canoverride) {
-            $record->gradeover = $workshep->raw_grade_value($data->gradeover, $workshep->grade);
-            $record->gradeoverby = $userid;
-            $record->feedbackauthor = $data->feedbackauthor;
-            $record->feedbackauthorformat = $data->feedbackauthorformat;
-        }
-        if ($canpublish) {
-            $record->published = !empty($data->published);
-        }
-        $DB->update_record('workshep_submissions', $record);
+        $workshep->evaluate_submission($submission, $data, $canpublish, $canoverride);
+        // Fixed upstream.
         redirect($workshep->view_url());
     }
 }
@@ -382,6 +303,7 @@ if ($submission->id) {
 
 // If not at removal confirmation screen, some action buttons can be displayed.
 if (!$delete) {
+    // Display create/edit button.
     if ($editable) {
         if ($submission->id) {
             $btnurl = new moodle_url($PAGE->url, array('edit' => 'on', 'id' => $submission->id));
@@ -393,11 +315,13 @@ if (!$delete) {
         echo $output->single_button($btnurl, $btntxt, 'get');
     }
 
+    // Display delete button.
     if ($submission->id and $deletable) {
         $url = new moodle_url($PAGE->url, array('delete' => 1));
         echo $output->single_button($url, get_string('deletesubmission', 'workshep'), 'get');
     }
 
+    // Display assess button.
     if ($submission->id and !$edit and !$isreviewer and $canallocate and $workshep->assessing_allowed($userid)) {
         $url = new moodle_url($PAGE->url, array('assess' => 1));
         echo $output->single_button($url, get_string('assess', 'workshep'), 'post');
@@ -466,7 +390,7 @@ if (has_capability('mod/workshep:viewallassessments', $workshep->context) or ($o
             'showform'      => !is_null($assessment->grade),
             'showweight'    => true,
         );
-
+        
         $displayassessment = $workshep->prepare_assessment($assessment, $mform, $options);
         if ($canoverride) {
             $displayassessment->add_action($workshep->assess_url($assessment->id), get_string('assessmentsettings', 'workshep'));
@@ -496,5 +420,25 @@ if (!$edit and $canoverride) {
 }
 
 echo $output->continue_button(new moodle_url($workshep->view_url()));
+
+// If portfolios are enabled and we are not on the edit/removal confirmation screen, display a button to export this page.
+// The export is not offered if the submission is seen as a published one (it has no relation to the current user.
+if (!empty($CFG->enableportfolios)) {
+    if (!$delete and !$edit and !$seenaspublished and $submission->id and ($ownsubmission or $canviewall or $isreviewer)) {
+        if (has_capability('mod/workshep:exportsubmissions', $workshep->context)) {
+            require_once($CFG->libdir.'/portfoliolib.php');
+
+            $button = new portfolio_add_button();
+            $button->set_callback_options('mod_workshep_portfolio_caller', array(
+                'id' => $workshep->cm->id,
+                'submissionid' => $submission->id,
+            ), 'mod_workshep');
+            $button->set_formats(PORTFOLIO_FORMAT_RICHHTML);
+            echo html_writer::start_tag('div', array('class' => 'singlebutton'));
+            echo $button->to_html(PORTFOLIO_ADD_FULL_FORM, get_string('exportsubmission', 'workshep'));
+            echo html_writer::end_tag('div');
+        }
+    }
+}
 
 echo $output->footer();

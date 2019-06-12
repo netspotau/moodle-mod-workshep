@@ -135,7 +135,7 @@ if ($mform->is_cancelled()) {
         // Remember the last one who edited the reference assessment.
         $coredata->reviewerid = $USER->id;
     }
-    // Update the assessment data if there is something other than just the 'id'.
+    // Update the assessment data if there is something other than just the 'id'.  
     if (count((array)$coredata) > 1 ) {
         $DB->update_record('workshep_assessments', $coredata);
     }
@@ -193,7 +193,7 @@ if ($canmanage and $assessment->weight == 1) {
     $assessment = $workshep->prepare_example_assessment($assessment, $mform, $options);
     $assessment->title = get_string('assessmentbyyourself', 'workshep');
     echo $output->render($assessment);
-
+    
     if(!$workshep->examplesreassess and !empty($assessment->grade)) {
         echo $output->single_button($workshep->view_url(), get_string('continue', 'moodle'));
     }

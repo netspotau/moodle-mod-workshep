@@ -37,13 +37,17 @@ class backup_workshepform_accumulative_subplugin extends backup_subplugin {
         $subpluginwrapper = new backup_nested_element($this->get_recommended_name());
         $subplugindimension = new backup_nested_element('workshepform_accumulative_dimension', array('id'), array(
             'sort', 'description', 'descriptionformat', 'grade', 'weight'));
+        $subpluginconfig = new backup_nested_element('workshepform_accum_config', array('id'), array(
+            'workshepid', 'additive'));
 
         // connect XML elements into the tree
         $subplugin->add_child($subpluginwrapper);
         $subpluginwrapper->add_child($subplugindimension);
+        $subpluginwrapper->add_child($subpluginconfig);
 
         // set source to populate the data
         $subplugindimension->set_source_table('workshepform_accumulative', array('workshepid' => backup::VAR_ACTIVITYID));
+        $subpluginconfig->set_source_table('workshepform_accum_config', array('workshepid' => backup::VAR_ACTIVITYID));
 
         // id annotations
         $subplugindimension->annotate_ids('scale', 'grade');

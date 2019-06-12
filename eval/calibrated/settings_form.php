@@ -42,7 +42,7 @@ class workshep_calibrated_evaluation_settings_form extends moodleform {
         $mform->addElement('checkbox', 'adjustgrades', get_string('adjustgrades', 'workshepeval_calibrated'));
         $mform->setDefault('adjustgrades', true);
         $mform->addHelpButton('adjustgrades','adjustgrades','workshepeval_calibrated');
-
+        
         $mform->addElement('submit', 'submit', get_string('aggregategrades', 'workshep'));
 
         $this->set_data($current);

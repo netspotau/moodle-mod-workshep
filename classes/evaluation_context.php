@@ -84,7 +84,7 @@ SQL;
         if (\workshep::PHASE_CLOSED == $this->workshep->phase) {
             // push the grades into the gradebook
             $workshep = new \stdClass();
-            foreach ($this as $property => $value) {
+            foreach ($this->workshep->dbrecord as $property => $value) {
                 $workshep->{$property} = $value;
             }
             $workshep->cmidnumber = $this->cm->id;

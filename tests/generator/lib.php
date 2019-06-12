@@ -153,6 +153,8 @@ class mod_workshep_generator extends testing_module_generator {
             'timecreated' => $timenow,
             'timemodified' => $timenow,
             'grade' => null,
+            'feedbackauthor' => '',
+            'feedbackreviewer' => '',
         );
 
         $id = $DB->insert_record('workshep_assessments', $record);

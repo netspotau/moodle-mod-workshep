@@ -55,7 +55,7 @@ $settingsform = $evaluator->get_settings_form($PAGE->url);
 // if need be
 
 $settingsdata = $settingsform->get_data();
-
+    
 if (empty($settingsdata)) {
     $settingsdata = $evaluator->get_settings();
 }

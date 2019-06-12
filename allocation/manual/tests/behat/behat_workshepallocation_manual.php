@@ -90,7 +90,7 @@ class behat_workshepallocation_manual extends behat_base {
     public function i_allocate_submissions_in_workshep_as($workshepname, TableNode $table) {
 
         $this->find_link($workshepname)->click();
-        $this->find_link(get_string('allocate', 'workshep'))->click();
+        $this->execute('behat_navigation::i_navigate_to_in_current_page_administration', get_string('allocate', 'workshep'));
         $rows = $table->getRows();
         $reviewer = $participant = null;
         for ($i = 0; $i < count($rows[0]); $i++) {

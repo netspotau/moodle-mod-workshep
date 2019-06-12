@@ -1,5 +1,5 @@
 <?php
-
+    
 require_once(dirname(dirname(dirname(__FILE__))).'/config.php');
 require_once(dirname(__FILE__).'/locallib.php');
 
@@ -16,5 +16,5 @@ require_login($course, true, $cm);
 require_capability('mod/workshep:viewallassessments', $PAGE->context);
 
 $DB->set_field('workshep', 'submitterflagging', $activate, array('id' => $workshep->id));
-
+    
 ?>

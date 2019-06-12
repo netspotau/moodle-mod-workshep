@@ -1,37 +1,42 @@
-function init() {
+/*
+ * JavaScript library for WORKSHEP module
+ */
+M.mod_workshep = {};
+M.mod_workshep.mod_form = {};
+
+M.mod_workshep.mod_form.init = function() {
 	var uc = $('#id_usecalibration');
-
+	
 	uc.change(function(evt) {
-		updateCalibration(true);
+		M.mod_workshep.mod_form.updateCalibration(true);
 	});
-
-	updateCalibration(false);
-
+	
+	M.mod_workshep.mod_form.updateCalibration(false);
+	
 }
 
-function updateCalibration(animated) {
+M.mod_workshep.mod_form.updateCalibration = function(animated) {
 	var uc = $('#id_usecalibration');
 	var ue = $("#id_useexamples");
 	var cp = $("#id_calibrationphase");
 	var em = $("#id_examplesmode");
 	var ec = $("#id_examplescompare");
 	var er = $("#id_examplesreassess");
-
+	
 	var checked = uc.prop("checked");
-
+	
 	if (checked) {
 		ue.prop({checked: true, disabled: true});
 		em.prop({disabled: true});
-
+		
 		//set up the binding between the two selects
-		cp.bind('change', updateExamplePhase);
-		updateExamplePhase();
-
+		cp.bind('change', M.mod_workshep.mod_form.updateExamplePhase);
+		
 		//set up preventing examples from simultaneous compare/reassess
 		if (ec.prop('checked') && er.prop('checked')) {
-
+			
 			if (animated) {
-
+				
 				$("#id_examplesubmissionssettings").removeClass("collapsed");
 				var div = er.closest('.fitem');
 				div.css('position','relative');
@@ -46,26 +51,26 @@ function updateCalibration(animated) {
 			} else {
 				er.prop({checked: false});
 			}
-
+			
 		}
-
+		
 		// These two are now mutually exclusive
-		ec.bind('change', updateExamplesOptions);
-		er.bind('change', updateExamplesOptions);
-
+		ec.bind('change', M.mod_workshep.mod_form.updateExamplesOptions);
+		er.bind('change', M.mod_workshep.mod_form.updateExamplesOptions);
+		
 	} else {
 		ue.prop({disabled: false});
 		em.prop({disabled: false});
-		cp.unbind('change', updateExamplePhase);
-		er.unbind('change', updateExamplesOptions);
-		ec.unbind('change', updateExamplesOptions);
+		cp.unbind('change', M.mod_workshep.mod_form.updateExamplePhase);
+		er.unbind('change', M.mod_workshep.mod_form.updateExamplesOptions);
+		ec.unbind('change', M.mod_workshep.mod_form.updateExamplesOptions);
 	}
 }
 
-function updateExamplePhase() {
-
+M.mod_workshep.mod_form.updateExamplePhase = function() {
+	
 	console.log("updateExamplePhase");
-
+	
 	var cp = $("#id_calibrationphase");
 	var em = $("#id_examplesmode");
 	var val = cp.val();
@@ -77,19 +82,19 @@ function updateExamplePhase() {
 		em.val('2');
 		break;
 	}
-
+	
 }
 
-function updateExamplesOptions(evt) {
-
+M.mod_workshep.mod_form.updateExamplesOptions = function(evt) {
+	
 	var ec = $("#id_examplescompare");
 	var er = $("#id_examplesreassess");
 	var target = $(evt.target);
-
+	
 	if (ec.prop('checked') && er.prop('checked')) {
 		ec.prop('checked', false);
 		er.prop('checked', false);
 		target.prop('checked', true);
 	}
-
+	
 }

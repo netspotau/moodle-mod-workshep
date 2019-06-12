@@ -18,11 +18,11 @@ Feature: Provide example submission
       | teacher1 | c1     | editingteacher |
     And the following "activities" exist:
       | activity | name         | intro                     | course | idnumber  | useexamples |
-      | workshep | TestWorkshop | Test workshep description | c1     | workshep1 | 1           |
+      | workshep | TestWorkshep | Test workshep description | c1     | workshep1 | 1           |
     # As a teacher, define the assessment form to be used in the workshep.
     When I log in as "teacher1"
-    And I follow "Course1"
-    And I edit assessment form in workshep "TestWorkshop" as:"
+    And I am on "Course1" course homepage
+    And I edit assessment form in workshep "TestWorkshep" as:"
       | id_description__idx_0_editor | Aspect1 |
       | id_description__idx_1_editor | Aspect2 |
       | id_description__idx_2_editor |         |

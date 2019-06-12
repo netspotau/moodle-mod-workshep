@@ -32,7 +32,7 @@ defined('MOODLE_INTERNAL') || die();
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class mod_workshep_renderer extends plugin_renderer_base {
-
+    
     ////////////////////////////////////////////////////////////////////////////
     // External API - methods to render workshep renderable components
     ////////////////////////////////////////////////////////////////////////////
@@ -139,11 +139,12 @@ class mod_workshep_renderer extends plugin_renderer_base {
 
         return $o;
     }
-
+	
 	protected function helper_submission_content($submission) {
+		global $CFG;
 
 		$o = '';
-
+		
         $content = file_rewrite_pluginfile_urls($submission->content, 'pluginfile.php', $this->page->context->id,
                                                         'mod_workshep', 'submission_content', $submission->id);
         $content = format_text($content, $submission->contentformat, array('overflowdiv'=>true));
@@ -161,7 +162,7 @@ class mod_workshep_renderer extends plugin_renderer_base {
         $o .= $this->output->container($this->helper_submission_wordcount($content), 'wordcount');
 
         $o .= $this->helper_submission_attachments($submission->id, 'html');
-
+		
 		return $o;
 	}
 
@@ -347,56 +348,63 @@ class mod_workshep_renderer extends plugin_renderer_base {
      * @param workshep_user_plan $plan prepared for the user
      * @return string html code to be displayed
      */
-    protected function render_workshep_user_plan(workshep_user_plan $plan) {
+    protected function render_workshep_user_plan(workshep_user_plan $plan) {        
+        $o  = '';    // Output HTML code.
         $width = 100 / count($plan->phases);
-        $table = new html_table();
-        $table->attributes['class'] = 'userplan';
-        $table->attributes['role'] = 'section';
         $numberofphases = count($plan->phases);
-        $table->attributes['aria-label'] = get_string('userplanaccessibilitytitle', 'workshep', $numberofphases);
-        $table->head = array();
-        $table->colclasses = array();
-        $row = new html_table_row();
-        $row->attributes['class'] = 'phasetasks';
+        $o .= html_writer::start_tag('div', array(
+            'class' => 'userplan',
+            'aria-labelledby' => 'mod_workshep-userplanheading',
+            'aria-describedby' => 'mod_workshep-userplanaccessibilitytitle',
+        ));
+        $o .= html_writer::span(get_string('userplanaccessibilitytitle', 'workshep', $numberofphases),
+            'accesshide', array('id' => 'mod_workshep-userplanaccessibilitytitle'));
+        $o .= html_writer::link('#mod_workshep-userplancurrenttasks', get_string('userplanaccessibilityskip', 'workshep'),
+            array('class' => 'accesshide'));
         foreach ($plan->phases as $phasecode => $phase) {
-            $title = html_writer::tag('span', $phase->title);
-            if ($phase->active) {
-                $title .= ' ' . html_writer::tag('span', get_string('userplancurrentphase', 'workshep'),
-                    array('class' => 'accesshide'));
-            }
+            $o .= html_writer::start_tag('dl', array('class' => 'phase', 'style' => "width: $width%;"));
             $actions = '';
-            foreach ($phase->actions as $action) {
-                switch ($action->type) {
-                case 'switchphase':
-                    $icon = 'i/marker';
-                    if ($phasecode == workshep::PHASE_ASSESSMENT
-                            and $plan->workshep->phase == workshep::PHASE_SUBMISSION
-                            and $plan->workshep->phaseswitchassessment) {
-                        $icon = 'i/scheduled';
+
+            if ($phase->active) {
+                // Mark the section as the current one.
+                $icon = $this->output->pix_icon('i/marked', '', 'moodle', ['role' => 'presentation']);
+                $actions .= get_string('userplancurrentphase', 'workshep').' '.$icon;
+
+            } else {
+                // Display a control widget to switch to the given phase or mark the phase as the current one.
+                foreach ($phase->actions as $action) {
+                    if ($action->type === 'switchphase') {
+                        if ($phasecode == workshep::PHASE_ASSESSMENT && $plan->workshep->phase == workshep::PHASE_SUBMISSION
+                                && $plan->workshep->phaseswitchassessment) {
+                            $icon = new pix_icon('i/scheduled', get_string('switchphaseauto', 'mod_workshep'));
+                        } else {
+                            $icon = new pix_icon('i/marker', get_string('switchphase'.$phasecode, 'mod_workshep'));
+                        }
+                        $actions .= $this->output->action_icon($action->url, $icon, null, null, true);
                     }
-                    $actions .= $this->output->action_icon($action->url, new pix_icon($icon, get_string('switchphase', 'workshep')));
-                    break;
                 }
             }
+
             if (!empty($actions)) {
                 $actions = $this->output->container($actions, 'actions');
             }
-            $table->head[] = $this->output->container($title . $actions);
             $classes = 'phase' . $phasecode;
             if ($phase->active) {
+                $title = html_writer::span($phase->title, 'phasetitle', ['id' => 'mod_workshep-userplancurrenttasks']);
                 $classes .= ' active';
             } else {
+                $title = html_writer::span($phase->title, 'phasetitle');
                 $classes .= ' nonactive';
             }
-            $table->colclasses[] = $classes;
-            $cell = new html_table_cell();
-            $cell->text = $this->helper_user_plan_tasks($phase->tasks);
-            $cell->style = "width: $width%";
-            $row->cells[] = $cell;
+            $o .= html_writer::start_tag('dt', array('class' => $classes));
+            $o .= $this->output->container($title . $actions);
+            $o .= html_writer::start_tag('dd', array('class' => $classes. ' phasetasks'));
+            $o .= $this->helper_user_plan_tasks($phase->tasks);
+            $o .= html_writer::end_tag('dd');
+            $o .= html_writer::end_tag('dl');
         }
-        $table->data = array($row);
-
-        return html_writer::table($table);
+        $o .= html_writer::end_tag('div');
+        return $o;
     }
 
     /**
@@ -507,7 +515,7 @@ class mod_workshep_renderer extends plugin_renderer_base {
         $table->head[] = $sortbysubmisstion;
 
         // If we are in submission phase ignore the following headers (columns).
-        if ($options->workshepphase != workshep::PHASE_SUBMISSION) {
+        if (!empty($options->workshepphase) && $options->workshepphase != workshep::PHASE_SUBMISSION) {
             $table->head[] = $this->helper_sortable_heading(get_string('receivedgrades', 'workshep'));
             if ($options->showsubmissiongrade) {
                 $table->head[] = $this->helper_sortable_heading(get_string('submissiongradeof', 'workshep', $data->maxgrade),
@@ -570,7 +578,7 @@ class mod_workshep_renderer extends plugin_renderer_base {
                 }
 
                 // If we are in submission phase ignore the following columns.
-                if ($options->workshepphase == workshep::PHASE_SUBMISSION) {
+                if (!empty($options->workshepphase) && $options->workshepphase == workshep::PHASE_SUBMISSION) {
                     $table->data[] = $row;
                     continue;
                 }
@@ -621,7 +629,7 @@ class mod_workshep_renderer extends plugin_renderer_base {
                     } else {
                         $cell->attributes['class'] .= ' notnull';
                     }
-
+                    
                     $row->cells[] = $cell;
                 }
                 // column #6 - total grade for assessment
@@ -899,9 +907,9 @@ class mod_workshep_renderer extends plugin_renderer_base {
         $o .= $this->output->container_end(); // header
 
 		if ($assessment->submission) {
-
+			
 			$o .= $this->container($this->helper_submission_content($assessment->submission), 'submission-full');
-
+		
 		}
 
         if (!is_null($assessment->form)) {
@@ -932,7 +940,7 @@ class mod_workshep_renderer extends plugin_renderer_base {
         }
 
 		// Handle the flagged assessment resolution options
-
+		
 		// This is raw HTML because it's intended for use within a larger form
 		// TODO: Localisation
 		if ($assessment->resolution) {
@@ -943,7 +951,7 @@ class mod_workshep_renderer extends plugin_renderer_base {
 </div>
 HTML;
 		}
-
+        
         $o .= $this->output->container_end(); // main wrapper
 
         return $o;
@@ -968,22 +976,22 @@ HTML;
     protected function render_workshep_example_reference_assessment(workshep_example_reference_assessment $assessment) {
         return $this->render_workshep_assessment($assessment);
     }
-
+    
     /// CALIBRATION REPORT
-
+    
     protected function helper_calibration_report_reviewer(stdclass $reviewer) {
         $out  = $this->output->user_picture($reviewer, array('courseid' => $this->page->course->id, 'size' => 35));
         $out .= html_writer::tag('span', fullname($reviewer));
 
         return $out;
     }
-
+    
     protected function render_workshep_calibration_report(workshep_calibration_report $report) {
-
+        
         $options = $report->options;
-
+        
         $table = new html_table();
-
+        
         $sortbyfirstname = $this->helper_sortable_heading(get_string('firstname'), 'firstname', $options->sortby, $options->sorthow);
         $sortbylastname = $this->helper_sortable_heading(get_string('lastname'), 'lastname', $options->sortby, $options->sorthow);
         if (self::fullname_format() == 'lf') {
@@ -995,28 +1003,28 @@ HTML;
         $table->head = array();
         $table->head[] = $sortbyname;
         $table->head[] = $this->helper_sortable_heading(get_string('score', 'workshep'), 'score', $options->sortby, $options->sorthow);
-
+        
         foreach($report->reviewers as $reviewer) {
             $row = new html_table_row();
-
+            
             $reviewercell = new html_table_cell();
             $reviewercell->text = $this->helper_calibration_report_reviewer($reviewer, $report->reviewers);
-
+            
             $row->cells[] = $reviewercell;
-
+            
             $scorecell = new html_table_cell();
             $scorecell->text = isset($report->scores[$reviewer->id]) ? sprintf("%1.2f%%", $report->scores[$reviewer->id]) : get_string('nocalibrationscore', 'workshep');
             if (isset($report->scores[$reviewer->id]) && isset($reviewer->calibrationlink)) {
                 $scorecell->text = html_writer::link($reviewer->calibrationlink, $scorecell->text);
             }
-
+            
             $row->cells[] = $scorecell;
-
+            
             $table->data[] = $row;
         }
-
+        
         return html_writer::table($table);
-
+        
     }
 
     /**
@@ -1030,36 +1038,36 @@ HTML;
         $o = '';
 
         if (($assessment instanceof workshep_example_assessment) && isset($assessment->reference_assessment)) {
-
+            
             $yours = $this->inner_overall_feedback($assessment);
             $ref = $this->inner_overall_feedback($assessment->reference_assessment);
-
+            
             if (( $yours === '' ) && ( $ref === '' )) {
                 $o = '';
             } else {
-
+            
                 $o .= $this->output->container_start('center');
 
                 $o .= $this->output->container_start('inline-block');
                 $o .= $this->output->heading(get_string('assessmentreference','workshep'), 2, 'reference-assessment');
-
+            
                 $o .= $this->inner_overall_feedback($assessment->reference_assessment);
-
+            
                 $o .= $this->output->container_end();
 
                 $o .= $this->output->container_start('inline-block');
                 $o .= $this->output->heading(get_string('assessmentbyfullname','workshep', fullname($assessment->reviewer)), 2, 'example-assessment');
-
+            
                 $o .= $this->inner_overall_feedback($assessment);
-
+            
                 $o .= $this->output->container_end();
                 $o .= $this->output->container_end();
             }
-
+            
         } else {
             $o = $this->inner_overall_feedback($assessment);
         }
-
+        
         if ($o === '') {
             return '';
         }
@@ -1070,7 +1078,7 @@ HTML;
 
         return $o;
     }
-
+    
     protected function inner_overall_feedback(workshep_assessment $assessment) {
         $content = $assessment->get_overall_feedback_content();
 
@@ -1117,7 +1125,7 @@ HTML;
         if ($o === '') {
             return '';
         }
-
+        
         return $o;
     }
 
@@ -1285,18 +1293,26 @@ HTML;
         $out = '';
         foreach ($tasks as $taskcode => $task) {
             $classes = '';
+            $accessibilitytext = '';
             $icon = null;
             if ($task->completed === true) {
                 $classes .= ' completed';
-            } elseif ($task->completed === false) {
+                $accessibilitytext .= get_string('taskdone', 'workshep') . ' ';
+            } else if ($task->completed === false) {
                 $classes .= ' fail';
-            } elseif ($task->completed === 'info') {
+                $accessibilitytext .= get_string('taskfail', 'workshep') . ' ';
+            } else if ($task->completed === 'info') {
                 $classes .= ' info';
+                $accessibilitytext .= get_string('taskinfo', 'workshep') . ' ';
+            } else {
+                $accessibilitytext .= get_string('tasktodo', 'workshep') . ' ';
             }
             if (is_null($task->link)) {
-                $title = $task->title;
+                $title = html_writer::tag('span', $accessibilitytext, array('class' => 'accesshide'));
+                $title .= $task->title;
             } else {
-                $title = html_writer::link($task->link, $task->title);
+                $title = html_writer::tag('span', $accessibilitytext, array('class' => 'accesshide'));
+                $title .= html_writer::link($task->link, $task->title);
             }
             $title = $this->output->container($title, 'title');
             $details = $this->output->container($task->details, 'details');

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/workshep/eval/best/db" VERSION="20091020" COMMENT="XMLDB file for Moodle mod/workshep/eval/best"
+<XMLDB PATH="mod/workshep/eval/calibrated/db" VERSION="20091020" COMMENT="XMLDB file for Moodle mod/workshep/eval/best"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../../../lib/xmldb/xmldb.xsd"
 >

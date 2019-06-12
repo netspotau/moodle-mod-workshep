@@ -38,7 +38,7 @@ class workshep_best_evaluation_settings_form extends moodleform {
         $workshep       = $this->_customdata['workshep'];
 
         $mform->addElement('header', 'general', get_string('settings', 'workshepeval_best'));
-
+        
         $options = $workshep->available_evaluation_methods_list();
 
         //TODO: this is a weird way of doing this. maybe we should AJAX in the forms when switching methods?

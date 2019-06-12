@@ -44,6 +44,10 @@ class restore_workshepform_accumulative_subplugin extends restore_subplugin {
         $elepath = $this->get_pathfor('/workshepform_accumulative_dimension'); // we used get_recommended_name() so this works
         $paths[] = new restore_path_element($elename, $elepath);
 
+        $elename = $this->get_namefor('config');
+        $elepath = $this->get_pathfor('/workshepform_accum_config'); // we used get_recommended_name() so this works
+        $paths[] = new restore_path_element($elename, $elepath);
+
         return $paths; // And we return the interesting paths
     }
 
@@ -89,6 +93,20 @@ class restore_workshepform_accumulative_subplugin extends restore_subplugin {
         return $paths; // And we return the interesting paths
     }
 
+    /**
+     * Returns the paths to be handled by the subplugin at assessment level
+     */
+    protected function define_accum_config_subplugin_structure() {
+
+        $paths = array();
+
+        $elename = $this->get_namefor('accum_config');
+        $elepath = $this->get_pathfor('/workshepform_accum_config'); // we used get_recommended_name() so this works
+        $paths[] = new restore_path_element($elename, $elepath);
+
+        return $paths; // And we return the interesting paths
+    }
+
     ////////////////////////////////////////////////////////////////////////////
     // defined path elements are dispatched to the following methods
     ////////////////////////////////////////////////////////////////////////////
@@ -112,6 +130,21 @@ class restore_workshepform_accumulative_subplugin extends restore_subplugin {
 
         // Process files for this workshepform_accumulative->id only
         $this->add_related_files('workshepform_accumulative', 'description', $this->get_namefor('dimension'), null, $oldid);
+    }
+
+    /**
+     * Processes the workshepform_accumulative_config element
+     */
+    public function process_workshepform_accumulative_config($data) {
+        global $DB;
+
+        $data = (object)$data;
+        $oldid = $data->id;
+
+        $data->workshepid = $this->get_new_parentid('workshep');
+
+        $newitemid = $DB->insert_record('workshepform_accum_config', $data);
+        $this->set_mapping($this->get_namefor('accum_config'), $oldid, $newitemid, true);
     }
 
     /**

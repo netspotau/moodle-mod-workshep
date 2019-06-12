@@ -31,6 +31,7 @@ $string['allocationexists'] = 'The allocation already exists';
 $string['areyousuretodeallocate'] = 'Are you sure you want deallocate the selected assessment?';
 $string['areyousuretodeallocategraded'] = 'You are going to remove the assessment that has already been graded. Are you really sure you want to do it?';
 $string['pluginname'] = 'Manual allocation';
+$string['privacy:metadata:preference:perpage'] = 'Number of allocated assessments the user prefers to see on one page.';
 $string['showallparticipants'] = 'Show all participants';
 
 $string['uploadform_helptext'] = <<<HTML

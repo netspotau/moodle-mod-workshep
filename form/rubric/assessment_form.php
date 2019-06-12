@@ -95,7 +95,7 @@ class workshep_rubric_list_assessment_form extends workshep_rubric_assessment_fo
                         format_text($definition, $definitionformat, null, $workshep->course->id), $levelid);
             }
             $mform->addGroup($levelgrp, 'levelgrp__idx_'.$i, '', "<br />\n", false);
-
+                        
         }
         $this->set_data($current);
     }

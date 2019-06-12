@@ -25,7 +25,7 @@ if($form->exportValue('clear'))
 	$delete = $DB->get_records_select('workshep_assessments',"submissionid $select AND grade is NULL",$params,'','id');
 	$dontdelete = $DB->get_records_select('workshep_assessments',"submissionid $select AND grade is not NULL",$params,'','id,submissionid,reviewerid');
     $DB->delete_records_list('workshep_assessments','id',array_keys($delete));
-
+	
 	$reviewers = array();
 	foreach ($dontdelete as $key => $value) {
 		$reviewers[$value->reviewerid] = $value->reviewerid;
@@ -51,7 +51,7 @@ if($form->exportValue('clear'))
         $groups[$g->name] = $g;
         $g->members = array_keys(groups_get_members($g->id,'u.id','u.id'));
     }
-
+ 
 	$failures = array(); // username => reason
 
 	$submissions = $workshep->get_submissions_grouped();
@@ -59,29 +59,29 @@ if($form->exportValue('clear'))
     foreach($submissions as $k => $s) {
         $submissions_by_group[$s->group->id] = $s;
     }
-
+    
 	foreach($csv as $a) {
 		if(!empty($a)) {
 			$reviewee = trim($a[0]);
 			$reviewers = array_slice($a,1);
-
+			
 			if (empty($reviewee)) continue;
 			if (empty($reviewers)) continue;
-
+			
 			if (empty($groups[$reviewee])) {
 				$failures[$reviewee] = "error::No group for name $reviewee";
 				continue;
 			}
 
 			$group = $groups[$reviewee];
-
+			
 			if (empty($submissions_by_group[$group->id])) {
 				$failures[$reviewee] = "error::No submission for $reviewee";
 				continue;
 			}
 
 			$submission = $submissions_by_group[$group->id];
-
+			
 			foreach($reviewers as $i) {
                 $i = trim($i);
 				if (empty($i)) continue;

@@ -55,10 +55,10 @@ class mod_workshep_mod_form extends moodleform_mod {
      */
     public function definition() {
         global $CFG, $DB, $PAGE;
-
+		
 		$PAGE->requires->jquery();
 		$PAGE->requires->js('/mod/workshep/mod_form.js');
-		$PAGE->requires->js_function_call('init');
+		$PAGE->requires->js_init_call('M.mod_workshep.mod_form.init');
 
         $workshepconfig = get_config('workshep');
         $mform = $this->_form;
@@ -142,10 +142,8 @@ class mod_workshep_mod_form extends moodleform_mod {
         $mform->setDefault('nattachments', 1);
 
         $label = get_string('allowedfiletypesforsubmission', 'workshep');
-        $mform->addElement('text', 'submissionfiletypes', $label, array('maxlength' => 255, 'size' => 64));
+        $mform->addElement('filetypes', 'submissionfiletypes', $label);
         $mform->addHelpButton('submissionfiletypes', 'allowedfiletypesforsubmission', 'workshep');
-        $mform->setType('submissionfiletypes', PARAM_TEXT);
-        $mform->addRule('submissionfiletypes', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
         $mform->disabledIf('submissionfiletypes', 'nattachments', 'eq', 0);
 
         $options = get_max_upload_sizes($CFG->maxbytes, $this->course->maxbytes, 0, $workshepconfig->maxbytes);
@@ -157,10 +155,10 @@ class mod_workshep_mod_form extends moodleform_mod {
         $text = get_string('latesubmissions_desc', 'workshep');
         $mform->addElement('checkbox', 'latesubmissions', $label, $text);
         $mform->addHelpButton('latesubmissions', 'latesubmissions', 'workshep');
-
+		
   		$numgroups = $DB->count_records('groups',array('courseid' => $this->course->id));
         $disabled = (bool)($numgroups == 0);
-
+        
         $label = get_string('teammode', 'workshep');
         if ($disabled) {
             $text = get_string('teammode_disabled','workshep');
@@ -182,7 +180,7 @@ class mod_workshep_mod_form extends moodleform_mod {
         $label = get_string('instructreviewers', 'workshep');
         $mform->addElement('editor', 'instructreviewerseditor', $label, null,
                             workshep::instruction_editors_options($this->context));
-
+                            
         $label = get_string('useselfassessment', 'workshep');
         $text = get_string('useselfassessment_desc', 'workshep');
         $mform->addElement('checkbox', 'useselfassessment', $label, $text);
@@ -207,10 +205,8 @@ class mod_workshep_mod_form extends moodleform_mod {
         $mform->disabledIf('overallfeedbackfiles', 'overallfeedbackmode', 'eq', 0);
 
         $label = get_string('allowedfiletypesforoverallfeedback', 'workshep');
-        $mform->addElement('text', 'overallfeedbackfiletypes', $label, array('maxlength' => 255, 'size' => 64));
+        $mform->addElement('filetypes', 'overallfeedbackfiletypes', $label);
         $mform->addHelpButton('overallfeedbackfiletypes', 'allowedfiletypesforoverallfeedback', 'workshep');
-        $mform->setType('overallfeedbackfiletypes', PARAM_TEXT);
-        $mform->addRule('overallfeedbackfiletypes', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
         $mform->disabledIf('overallfeedbackfiletypes', 'overallfeedbackfiles', 'eq', 0);
 
         $options = get_max_upload_sizes($CFG->maxbytes, $this->course->maxbytes);
@@ -244,7 +240,7 @@ class mod_workshep_mod_form extends moodleform_mod {
         $mform->disabledIf('numexamples', 'useexamples');
         $mform->setDefault('numexamples', 0);
         $mform->addHelpButton('numexamples','numexamples','workshep');
-
+                
         $label = get_string('examplescompare', 'workshep');
         $text = get_string('examplescompare_desc', 'workshep');
         $mform->addElement('checkbox', 'examplescompare', $label, $text);
@@ -259,13 +255,13 @@ class mod_workshep_mod_form extends moodleform_mod {
 
         // Calibration ----------------------------------------------------------------
         $mform->addElement('header', 'examplesubmissionssettings', get_string('calibration', 'workshep'));
-
+        
         $label = get_string('usecalibration', 'workshep');
         $mform->disabledIf('usecalibration', 'useexamples');
         $text = get_string('usecalibration_desc', 'workshep');
         $mform->addElement('checkbox', 'usecalibration', $label, $text);
         $mform->addHelpButton('usecalibration', 'usecalibration', 'workshep');
-
+        
         $workshepcalibrationconfig = get_config('workshepcalibration_examples');
         $label = get_string('autorecalculate', 'workshepcalibration_examples');
         $mform->addElement('checkbox', 'autorecalculate', $label);
@@ -442,17 +438,6 @@ class mod_workshep_mod_form extends moodleform_mod {
      */
     public function validation($data, $files) {
         $errors = parent::validation($data, $files);
-
-        // Validate lists of allowed extensions.
-        foreach (array('submissionfiletypes', 'overallfeedbackfiletypes') as $fieldname) {
-            if (isset($data[$fieldname])) {
-                $invalidextensions = workshep::invalid_file_extensions($data[$fieldname], array_keys(core_filetypes::get_types()));
-                if ($invalidextensions) {
-                    $errors[$fieldname] = get_string('err_unknownfileextension', 'mod_workshep',
-                        workshep::clean_file_extensions($invalidextensions));
-                }
-            }
-        }
 
         // check the phases borders are valid
         if ($data['submissionstart'] > 0 and $data['submissionend'] > 0 and $data['submissionstart'] >= $data['submissionend']) {

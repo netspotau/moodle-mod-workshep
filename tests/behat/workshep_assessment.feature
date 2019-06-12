@@ -24,44 +24,44 @@ Feature: Workshop submission and assessment
       | teacher1 | c1     | editingteacher |
     And the following "activities" exist:
       | activity | name         | intro                     | course | idnumber  |
-      | workshep | TestWorkshop | Test workshep description | c1     | workshep1 |
+      | workshep | TestWorkshep | Test workshep description | c1     | workshep1 |
 # teacher1 sets up assessment form and changes the phase to submission
     When I log in as "teacher1"
-    And I follow "Course1"
-    And I edit assessment form in workshep "TestWorkshop" as:"
+    And I am on "Course1" course homepage
+    And I edit assessment form in workshep "TestWorkshep" as:"
       | id_description__idx_0_editor | Aspect1 |
       | id_description__idx_1_editor | Aspect2 |
       | id_description__idx_2_editor |         |
-    And I change phase in workshep "TestWorkshop" to "Submission phase"
+    And I change phase in workshep "TestWorkshep" to "Submission phase"
     And I log out
 # student1 submits
     And I log in as "student1"
-    And I follow "Course1"
-    And I follow "TestWorkshop"
+    And I am on "Course1" course homepage
+    And I follow "TestWorkshep"
     Then I should see "Submit your work"
-    And I add a submission in workshep "TestWorkshop" as:"
+    And I add a submission in workshep "TestWorkshep" as:"
       | Title              | Submission1  |
       | Submission content | Some content |
     And "//div[@class='submission-full' and contains(.,'Submission1') and contains(.,'submitted on')]" "xpath_element" should exist
     And I log out
 # student2 submits
     And I log in as "student2"
-    And I follow "Course1"
-    And I add a submission in workshep "TestWorkshop" as:"
+    And I am on "Course1" course homepage
+    And I add a submission in workshep "TestWorkshep" as:"
       | Title              | Submission2  |
       | Submission content | Some content |
     And I log out
 # student3 submits
     And I log in as "student3"
-    And I follow "Course1"
-    And I add a submission in workshep "TestWorkshop" as:"
+    And I am on "Course1" course homepage
+    And I add a submission in workshep "TestWorkshep" as:"
       | Title              | Submission3  |
       | Submission content | Some content |
     And I log out
 # teacher1 allocates reviewers and changes the phase to assessment
     And I log in as "teacher1"
-    And I follow "Course1"
-    And I follow "TestWorkshop"
+    And I am on "Course1" course homepage
+    And I follow "TestWorkshep"
     And I should see "to allocate: 3"
     And I should see "There is at least one author who has not yet submitted their work"
     Then I should see "Workshop submissions report"
@@ -70,30 +70,30 @@ Feature: Workshop submission and assessment
     And I should see "Submission2" in the "Sam2 Student2" "table_row"
     And I should see "Submission3" in the "Sam3 Student3" "table_row"
     And I should see "No submission found for this user" in the "Sam4 Student4" "table_row"
-    And I allocate submissions in workshep "TestWorkshop" as:"
+    And I allocate submissions in workshep "TestWorkshep" as:"
       | Participant   | Reviewer      |
       | Sam1 Student1 | Sam2 Student2 |
       | Sam2 Student2 | Sam1 Student1 |
       | Sam3 Student3 | Sam1 Student1 |
       | Sam2 Student2 | Sam4 Student4 |
-    And I follow "TestWorkshop"
+    And I follow "TestWorkshep"
     And I should see "to allocate: 0"
-    And I change phase in workshep "TestWorkshop" to "Assessment phase"
+    And I change phase in workshep "TestWorkshep" to "Assessment phase"
     And I log out
 # student1 assesses work of student2 and student3
     And I log in as "student1"
-    And I follow "Course1"
-    And I follow "TestWorkshop"
+    And I am on "Course1" course homepage
+    And I follow "TestWorkshep"
     And "//ul[@class='tasks']/li[div[@class='title' and contains(.,'Assess peers')]]/div[@class='details' and contains(.,'pending: 2') and contains(.,'total: 2')]" "xpath_element" should exist
-    And I assess submission "Sam2" in workshep "TestWorkshop" as:"
+    And I assess submission "Sam2" in workshep "TestWorkshep" as:"
       | grade__idx_0            | 5 / 10            |
       | peercomment__idx_0      | You can do better |
       | grade__idx_1            | 10 / 10           |
       | peercomment__idx_1      | Amazing           |
       | Feedback for the author | Good work         |
     And "//ul[@class='tasks']/li[div[@class='title' and contains(.,'Assess peers')]]/div[@class='details' and contains(.,'pending: 1') and contains(.,'total: 2')]" "xpath_element" should exist
-    And I follow "Course1"
-    And I assess submission "Sam3" in workshep "TestWorkshop" as:"
+    And I am on "Course1" course homepage
+    And I assess submission "Sam3" in workshep "TestWorkshep" as:"
       | grade__idx_0            | 9 / 10      |
       | peercomment__idx_0      | Well done   |
       | grade__idx_1            | 8 / 10      |
@@ -103,10 +103,10 @@ Feature: Workshop submission and assessment
     And I log out
 # student2 assesses work of student1
     And I log in as "student2"
-    And I follow "Course1"
-    And I follow "TestWorkshop"
+    And I am on "Course1" course homepage
+    And I follow "TestWorkshep"
     And "//ul[@class='tasks']/li[div[@class='title' and contains(.,'Assess peers')]]/div[@class='details' and contains(.,'pending: 1') and contains(.,'total: 1')]" "xpath_element" should exist
-    And I assess submission "Sam1" in workshep "TestWorkshop" as:"
+    And I assess submission "Sam1" in workshep "TestWorkshep" as:"
       | grade__idx_0            | 6 / 10     |
       | peercomment__idx_0      |            |
       | grade__idx_1            | 7 / 10     |
@@ -116,8 +116,8 @@ Feature: Workshop submission and assessment
     And I log out
 # teacher1 makes sure he can see all peer grades
     And I log in as "teacher1"
-    And I follow "Course1"
-    And I follow "TestWorkshop"
+    And I am on "Course1" course homepage
+    And I follow "TestWorkshep"
     And I should see grade "52" for workshep participant "Sam1" set by peer "Sam2"
     And I should see grade "60" for workshep participant "Sam2" set by peer "Sam1"
     And I should see grade "-" for workshep participant "Sam2" set by peer "Sam4"
@@ -134,7 +134,7 @@ Feature: Workshop submission and assessment
       | Override grade for assessment | 11 |
       | Feedback for the reviewer     |    |
     And I press "Save and close"
-    And I change phase in workshep "TestWorkshop" to "Grading evaluation phase"
+    And I change phase in workshep "TestWorkshep" to "Grading evaluation phase"
     And I follow "Submission1"
     And I should see "Grade: 52 of 80" in the "//div[contains(concat(' ', normalize-space(@class), ' '), ' assessment-full ') and contains(.,'Sam2')]" "xpath_element"
     And I press "Assess"
@@ -152,5 +152,3 @@ Feature: Workshop submission and assessment
 
   @javascript
   Scenario: Add and assess submissions in workshep with javascript enabled
-
-  Scenario: Add and assess submissions in workshep with javascript disabled

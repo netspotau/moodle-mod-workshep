@@ -35,7 +35,7 @@ if ($ADMIN->fulltree) {
     }
 
     $settings->add(new admin_setting_configcheckbox('workshepcalibration_examples/autorecalculate', new lang_string('autorecalculate', 'workshepcalibration_examples'), get_string('configautorecalculate', 'workshepcalibration_examples'), 0));
-
+    
     $settings->add(new admin_setting_configselect('workshepcalibration_examples/accuracy', get_string('comparison', 'workshepcalibration_examples'),
                         new lang_string('configcomparison', 'workshepcalibration_examples'), 5, $options));
     $settings->add(new admin_setting_configselect('workshepcalibration_examples/consistence', get_string('consistency', 'workshepcalibration_examples'),

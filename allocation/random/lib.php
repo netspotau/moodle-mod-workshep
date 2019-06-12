@@ -39,7 +39,7 @@ class workshep_random_allocator implements workshep_allocator {
 
     /** constants used to pass status messages between init() and ui() */
     const MSG_SUCCESS       = 1;
-
+    
     //some consts to differentiate teammode and normal mode
     protected $form_class = 'workshep_random_allocator_form';
 
@@ -129,7 +129,8 @@ class workshep_random_allocator implements workshep_allocator {
             $allreviewers = $reviewers[0];
             $allreviewersreloaded = false;
             foreach ($newallocations as $newallocation) {
-                list($reviewerid, $authorid) = each($newallocation);
+                $reviewerid = key($newallocation);
+                $authorid = current($newallocation);
                 $a = new stdClass();
                 if (isset($allreviewers[$reviewerid])) {
                     $a->reviewername = fullname($allreviewers[$reviewerid]);
@@ -167,21 +168,14 @@ class workshep_random_allocator implements workshep_allocator {
             // by reviewer
             $result->log(get_string('numofdeallocatedassessment', 'workshepallocation_random', count($delassessments)), 'info');
             foreach ($delassessments as $delassessmentkey => $delassessmentid) {
-                $a = new stdclass();
-                $a->authorname      = fullname((object)array(
-                        'lastname'  => $assessments[$delassessmentid]->authorlastname,
-                        'firstname' => $assessments[$delassessmentid]->authorfirstname,
-                        'firstnamephonetic' => $assessments[$delassessmentid]->authorfirstnamephonetic,
-                        'lastnamephonetic' => $assessments[$delassessmentid]->authorlastnamephonetic,
-                        'middlename' => $assessments[$delassessmentid]->authormiddlename,
-                        'alternatename' => $assessments[$delassessmentid]->authoralternatename));
-                $a->reviewername    = fullname((object)array(
-                        'lastname'  => $assessments[$delassessmentid]->reviewerlastname,
-                        'firstname' => $assessments[$delassessmentid]->reviewerfirstname,
-                        'firstnamephonetic' => $assessments[$delassessmentid]->reviewerfirstnamephonetic,
-                        'lastnamephonetic' => $assessments[$delassessmentid]->reviewerlastnamephonetic,
-                        'middlename' => $assessments[$delassessmentid]->reviewermiddlename,
-                        'alternatename' => $assessments[$delassessmentid]->revieweralternatename));
+                $author = (object) [];
+                $reviewer = (object) [];
+                username_load_fields_from_object($author, $assessments[$delassessmentid], 'author');
+                username_load_fields_from_object($reviewer, $assessments[$delassessmentid], 'reviewer');
+                $a = [
+                    'authorname' => fullname($author),
+                    'reviewername' => fullname($reviewer),
+                ];
                 if (!is_null($assessments[$delassessmentid]->grade)) {
                     $result->log(get_string('allocationdeallocategraded', 'workshepallocation_random', $a), 'error', 1);
                     unset($delassessments[$delassessmentkey]);
@@ -322,7 +316,8 @@ class workshep_random_allocator implements workshep_allocator {
         $submissions    = $this->workshep->get_submissions($authorids);
         $submissions    = $this->index_submissions_by_authors($submissions);
         foreach ($newallocations as $newallocation) {
-            list($reviewerid, $authorid) = each($newallocation);
+            $reviewerid = key($newallocation);
+            $authorid = current($newallocation);
             if (!isset($submissions[$authorid])) {
                 throw new moodle_exception('unabletoallocateauthorwithoutsubmission', 'workshep');
             }
@@ -406,7 +401,8 @@ class workshep_random_allocator implements workshep_allocator {
                 continue;
             }
             foreach ($newallocations as $newallocation) {
-                list($nrid, $naid) = each($newallocation);
+                $nrid = key($newallocation);
+                $naid = current($newallocation);
                 if (array($arid, $aaid) == array($nrid, $naid)) {
                     // re-allocation found - let us continue with the next assessment
                     $keepids[$assessmentid] = null;
@@ -562,7 +558,7 @@ class workshep_random_allocator implements workshep_allocator {
                             }
                             $targetgroup = $this->get_element_with_lowest_workload($trygroups);
                         }
-
+                        
                         if ($targetgroup === false) {
                             $keeptrying = false;
                             $result->log(get_string('resultnotenoughpeers', 'workshepallocation_random'), 'error', 1);
@@ -700,7 +696,7 @@ class workshep_random_allocator implements workshep_allocator {
             $newallocations = array_diff_key($newallocations, array_flip($foundat));
         }
     }
-
+    
     /**
     * This exists because teammode treats options slightly differently from normal mode
     *
@@ -714,11 +710,11 @@ class workshep_random_allocator implements workshep_allocator {
         $options['excludesamegroup'] = $settings->excludesamegroup;
         return $options;
     }
-
+    
     protected function get_group_mode() {
         return groups_get_activity_groupmode($this->workshep->cm, $this->workshep->course);
     }
-
+    
     protected function get_authors() {
         return $this->workshep->get_grouped($this->workshep->get_potential_authors());
     }
@@ -726,7 +722,7 @@ class workshep_random_allocator implements workshep_allocator {
     public static function teammode_class() {
         return "workshep_teammode_random_allocator";
     }
-
+    
     public function post_allocation_redirect() {
         return $this->workshep->allocation_url('manual');
     }

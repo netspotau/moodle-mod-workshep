@@ -56,7 +56,7 @@ class workshep_feedbackreviewer_form extends moodleform {
             $mform->addElement('editor', 'feedbackreviewer_editor', get_string('feedbackreviewer', 'workshep'), null, $editoropts);
             $mform->setType('feedbackreviewer_editor', PARAM_RAW);
         }
-
+		
 		if (!empty($options['showflaggingresolution'])) {
 			$mform->addElement('static', 'resolution_help', get_string('resolutiontitle', 'workshep'), html_writer::tag('strong', get_string('needsresolution', 'workshep')));
 			$mform->addElement('radio', 'resolution', '', get_string('resolutionfair', 'workshep'), 1);
