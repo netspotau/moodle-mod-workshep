@@ -189,19 +189,23 @@ class mod_workshep_privacy_provider_testcase extends advanced_testcase {
         // Student1 has data in workshep11 (author + self reviewer), workshep12 (author) and workshep21 (reviewer).
         $contextlist = \mod_workshep\privacy\provider::get_contexts_for_userid($this->student1->id);
         $this->assertInstanceOf(\core_privacy\local\request\contextlist::class, $contextlist);
-        $this->assertEquals([$context11->id, $context12->id, $context21->id], $contextlist->get_contextids(), null, 0.0, 10, true);
+        $this->assertEquals([$context11->id, $context12->id, $context21->id], $contextlist->get_contextids(),
+            'Student1 has data in workshep11 (author + self reviewer), workshep12 (author) and workshep21 (reviewer).', 0.0, 10, true);
 
         // Student2 has data in workshep11 (reviewer), workshep12 (reviewer) and workshep21 (author).
         $contextlist = \mod_workshep\privacy\provider::get_contexts_for_userid($this->student2->id);
-        $this->assertEquals([$context11->id, $context12->id, $context21->id], $contextlist->get_contextids(), null, 0.0, 10, true);
+        $this->assertEquals([$context11->id, $context12->id, $context21->id], $contextlist->get_contextids(),
+            'Student2 has data in workshep11 (reviewer), workshep12 (reviewer) and workshep21 (author).', 0.0, 10, true);
 
         // Student3 has data in workshep11 (reviewer).
         $contextlist = \mod_workshep\privacy\provider::get_contexts_for_userid($this->student3->id);
-        $this->assertEquals([$context11->id], $contextlist->get_contextids(), null, 0.0, 10, true);
+        $this->assertEquals([$context11->id], $contextlist->get_contextids(),
+            'Student3 has data in workshep11 (reviewer).', 0.0, 10, true);
 
         // Teacher4 has data in workshep12 (gradeoverby) and workshep21 (gradinggradeoverby).
         $contextlist = \mod_workshep\privacy\provider::get_contexts_for_userid($this->teacher4->id);
-        $this->assertEquals([$context21->id, $context12->id], $contextlist->get_contextids(), null, 0.0, 10, true);
+        $this->assertEquals([$context21->id, $context12->id], $contextlist->get_contextids(),
+            'Teacher4 has data in workshep12 (gradeoverby) and workshep21 (gradinggradeoverby).', 0.0, 10, true);
     }
 
     /**
