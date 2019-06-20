@@ -607,14 +607,14 @@
 }
 
 .path-mod-workshep .assessment-full .resolution {
-	margin:10px auto;
-	width:50%;
-	border:1px solid #FEDD1D;
-	padding: 10px;
+    margin:10px auto;
+    width:50%;
+    border:1px solid #FEDD1D;
+    padding: 10px;
 }
 
 .path-mod-workshep .assessment-full .submission-full {
-	border: none;
+    border: none;
 }
 
 .path-mod-workshep .grading-report .receivedgrade span.grade,
@@ -630,7 +630,7 @@
 }
 
 .path-mod-workshep .grading-report.grouped .gradinggrade.cell {
-	font-size:150%;
+    font-size:150%;
 }
 
 .path-mod-workshep .grading-report .givengrade.null .user,
@@ -868,7 +868,7 @@
 }
 
 .path-mod-workshep #workshep-viewlet-flagging .loading::before {
-	content: url([[pix:mod_workshep|loading]]);
+    content: url([[pix:mod_workshep|loading]]);
 }
 
 /* Team Evaluation */

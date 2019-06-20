@@ -101,21 +101,21 @@ function workshep_add_instance(stdclass $workshep) {
         $workshep->calibrationconsistency = $plugindefaults->consistence;
     }
 
-	if ($workshep->usecalibration) {
+    if ($workshep->usecalibration) {
 
-		//here's a fun fact: disabling a checkbox stops it from being submitted with the form
-		$workshep->useexamples = true;
-		switch($workshep->calibrationphase) {
-			case workshep::PHASE_SETUP:
-				$workshep->examplesmode = workshep::EXAMPLES_BEFORE_SUBMISSION;
-				break;
-			case workshep::PHASE_SUBMISSION:
-				$workshep->examplesmode = workshep::EXAMPLES_BEFORE_ASSESSMENT;
-				break;
-		}
+        //here's a fun fact: disabling a checkbox stops it from being submitted with the form
+        $workshep->useexamples = true;
+        switch($workshep->calibrationphase) {
+            case workshep::PHASE_SETUP:
+                $workshep->examplesmode = workshep::EXAMPLES_BEFORE_SUBMISSION;
+                break;
+            case workshep::PHASE_SUBMISSION:
+                $workshep->examplesmode = workshep::EXAMPLES_BEFORE_ASSESSMENT;
+                break;
+        }
 
-		$workshep->evaluation = 'calibrated';
-	}
+        $workshep->evaluation = 'calibrated';
+    }
 
     if (isset($workshep->gradinggradepass)) {
         $workshep->gradinggradepass = (float)unformat_float($workshep->gradinggradepass);
@@ -238,25 +238,25 @@ function workshep_update_instance(stdclass $workshep) {
     // todo - if the grading strategy is being changed, we may want to replace all aggregated peer grades with nulls
 
 
-	if ($workshep->usecalibration) {
+    if ($workshep->usecalibration) {
 
-		//here's a fun fact: disabling a checkbox stops it from being submitted with the form
-		$workshep->useexamples = true;
-		switch($workshep->calibrationphase) {
-			case workshep::PHASE_SETUP:
-				$workshep->examplesmode = workshep::EXAMPLES_BEFORE_SUBMISSION;
-				break;
-			case workshep::PHASE_SUBMISSION:
-				$workshep->examplesmode = workshep::EXAMPLES_BEFORE_ASSESSMENT;
-				break;
-		}
+        //here's a fun fact: disabling a checkbox stops it from being submitted with the form
+        $workshep->useexamples = true;
+        switch($workshep->calibrationphase) {
+            case workshep::PHASE_SETUP:
+                $workshep->examplesmode = workshep::EXAMPLES_BEFORE_SUBMISSION;
+                break;
+            case workshep::PHASE_SUBMISSION:
+                $workshep->examplesmode = workshep::EXAMPLES_BEFORE_ASSESSMENT;
+                break;
+        }
 
-		$oldcalibration = $DB->get_field('workshep', 'usecalibration', array('id' => $workshep->id));
-		if ($oldcalibration == false) {
-			//turning on calibration - we want to switch to the calibrated evaluation plugin
-			$workshep->evaluation = 'calibrated';
-		}
-	}
+        $oldcalibration = $DB->get_field('workshep', 'usecalibration', array('id' => $workshep->id));
+        if ($oldcalibration == false) {
+            //turning on calibration - we want to switch to the calibrated evaluation plugin
+            $workshep->evaluation = 'calibrated';
+        }
+    }
 
     $DB->update_record('workshep', $workshep);
     $context = context_module::instance($workshep->coursemodule);

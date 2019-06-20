@@ -20,15 +20,15 @@ class workshep_examples_calibration_method implements workshep_calibration_metho
     
     public function calculate_calibration_scores(stdClass $settings) {
         
-		global $DB;
-		
+        global $DB;
+        
         // remember the recently used settings for this workshep
         if (empty($this->settings)) {
             $this->settings = new stdclass();
             $record = new stdclass();
             $record->workshepid = $this->workshep->id;
             $record->comparison = $settings->comparison;
-			$record->consistency = $settings->consistency;
+            $record->consistency = $settings->consistency;
             $DB->insert_record('workshepcalibration_examples', $record);
         } elseif (($this->settings->comparison != $settings->comparison) || ($this->settings->consistency != $settings->consistency)) {
             $DB->set_field('workshepcalibration_examples', 'comparison', $settings->comparison,
@@ -36,7 +36,7 @@ class workshep_examples_calibration_method implements workshep_calibration_metho
             $DB->set_field('workshepcalibration_examples', 'consistency', $settings->consistency,
                     array('workshepid' => $this->workshep->id));
         }
-		
+        
         $grader = $this->workshep->grading_strategy_instance();
         
         $this->settings->comparison = $settings->comparison;
@@ -45,8 +45,8 @@ class workshep_examples_calibration_method implements workshep_calibration_metho
         // get the information about the assessment dimensions
         $diminfo = $grader->get_dimensions_info();
 
-		// fetch the reference assessments
-		$references = $this->get_reference_assessments();
+        // fetch the reference assessments
+        $references = $this->get_reference_assessments();
 
         // fetch a recordset with all assessments to process
         $rs = $grader->get_assessments_recordset(null,true);
@@ -101,9 +101,9 @@ class workshep_examples_calibration_method implements workshep_calibration_metho
         $grader = $this->workshep->grading_strategy_instance();
         $diminfo = $grader->get_dimensions_info();
         
-		// cache the reference assessments
-		$references = $this->workshep->get_examples_for_manager();
-		$calibration_scores = array();
+        // cache the reference assessments
+        $references = $this->workshep->get_examples_for_manager();
+        $calibration_scores = array();
         
         //fetch grader recordset for examples
         $userkeys = array();
@@ -142,8 +142,8 @@ class workshep_examples_calibration_method implements workshep_calibration_metho
     Plug y into the consistency curves. Multiply x by the result and you have your calibration score!
     
     */
-	
-	private function calculate_calibration_score($assessments, $references, $diminfo) {
+    
+    private function calculate_calibration_score($assessments, $references, $diminfo) {
         
         //before we even get started, make sure the user has completed enough assessments to be calibrated
         $required_number_of_assessments = (int)$this->workshep->numexamples or count($references);
@@ -210,8 +210,8 @@ class workshep_examples_calibration_method implements workshep_calibration_metho
         if ($x > 1) $x = 1;
         
         return $x;
-		
-	}
+        
+    }
     
     private function normalize_grade($dim,$grade) {
         //todo: weight? is weight a factor here? probably should be...
@@ -262,7 +262,7 @@ class workshep_examples_calibration_method implements workshep_calibration_metho
         return new workshep_examples_calibration_explanation($userid, $exxx, $references, $diminfo, $options);
     }
     
-	public function get_settings_form(moodle_url $actionurl) {
+    public function get_settings_form(moodle_url $actionurl) {
         global $CFG;    // needed because the included files use it
         global $DB;
         require_once(dirname(__FILE__) . '/settings_form.php');
@@ -273,7 +273,7 @@ class workshep_examples_calibration_method implements workshep_calibration_metho
         $attributes = array('class' => 'calibrationsettingsform calibrated');
 
         return new workshep_examples_calibration_settings_form($actionurl, $customdata, 'post', '', $attributes);
-	}
+    }
     
 }
 

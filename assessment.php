@@ -181,7 +181,7 @@ if ($canoverridegrades or $cansetassessmentweight) {
         'editable' => true,
         'editableweight' => $cansetassessmentweight,
         'overridablegradinggrade' => $canoverridegrades,
-		'showflaggingresolution' => $cansetassessmentweight and ($assessment->submitterflagged == 1));
+        'showflaggingresolution' => $cansetassessmentweight and ($assessment->submitterflagged == 1));
     $feedbackform = $workshep->get_feedbackreviewer_form($PAGE->url, $assessment, $options);
     if ($data = $feedbackform->get_data()) {
         $workshep->evaluate_assessment($assessment, $data, $cansetassessmentweight, $canoverridegrades);
@@ -219,7 +219,7 @@ if ($workshep->usecalibration && (($isreviewer && (($workshep->phase == workshep
     $breakdown = $calibrator->prepare_grade_breakdown($reviewer->id);
     echo $calibration_renderer->render($breakdown);
     if (!$breakdown->empty) {
-	    echo $output->heading(html_writer::link($calibrator->user_calibration_url($reviewer->id), get_string('explanation','workshep', fullname($reviewer))));
+        echo $output->heading(html_writer::link($calibrator->user_calibration_url($reviewer->id), get_string('explanation','workshep', fullname($reviewer))));
     }
     echo $output->box_end();
     print_collapsible_region_end();
@@ -248,7 +248,7 @@ if ($isreviewer) {
         'showweight'    => true,
     );
     $displayassessment = $workshep->prepare_assessment($assessment, $mform, $options);
-	
+    
     if ($isauthor and $workshep->submitterflagging) {
         if ($assessment->submitterflagged == 1) {
             //unflag
@@ -258,7 +258,7 @@ if ($isreviewer) {
             $displayassessment->add_action($workshep->flag_url($assessment->id, $PAGE->url), get_string('flagassessment', 'workshep'));
         }
     }
-	
+    
     echo $output->render($displayassessment);
 }
 

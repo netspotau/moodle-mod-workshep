@@ -446,7 +446,7 @@ If self-assessment is disabled, students are prevented from marking their own te
 MDOWN;
 $string['teammode_disabled'] = 'Team mode is disabled because you have no groups in your course.';
 $string['teammode_ungroupedwarning'] = 'Warning: If the Enhanced Workshop is in Team mode, then users MUST be part of at least one group to submit work.<br/>
-	<br/>
+    <br/>
 These users are currently not in a group: {$a}';
 $string['teammode_notingroupwarning'] = 'You are not in any groups. You cannot submit work for this assessment.';
 $string['teammode_duplicategroupnameswarning'] = 'You have some groups with the same name, so you can\'t upload data. You need to change their names or allocate manually. (Duplicate names: {$a})';

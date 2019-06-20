@@ -22,7 +22,7 @@ if($form->exportValue('clear'))
     $vals = $DB->get_fieldset_select('workshep_submissions','id','workshepid = ?', array($workshep->id));
     list($p, $q) = $DB->get_in_or_equal($vals);
     $select = "submissionid $p AND grade is NULL";
-	$DB->delete_records_select('workshep_assessments',$select,$q);
+    $DB->delete_records_select('workshep_assessments',$select,$q);
 
 } else {
 
@@ -30,50 +30,50 @@ if($form->exportValue('clear'))
     $content = preg_replace('!\r\n?!', "\n", $content);
     $csv = array_map('str_getcsv',explode("\n",$content));
 
-	$usernames = array();
-	foreach($csv as $a) {
-		$usernames = array_merge($usernames,$a);
-	}
+    $usernames = array();
+    foreach($csv as $a) {
+        $usernames = array_merge($usernames,$a);
+    }
 
-	$users = $DB->get_records_list('user','username',$usernames,'','username,id,firstname,lastname');
+    $users = $DB->get_records_list('user','username',$usernames,'','username,id,firstname,lastname');
 
-	$failures = array(); // username => reason
+    $failures = array(); // username => reason
     
-	foreach($csv as $a) {
-		if(!empty($a)) {
-			$reviewee = trim($a[0]);
-			$reviewers = array_slice($a,1);
-			
-			if (empty($reviewee)) continue;
-			if (empty($reviewers)) continue;
-			
-			if (empty($users[$reviewee])) {
-                
-				$failures[$reviewee] = "error::No user for username $reviewee";
-				continue;
-			}
+    foreach($csv as $a) {
+        if(!empty($a)) {
+            $reviewee = trim($a[0]);
+            $reviewers = array_slice($a,1);
             
-			$submission = $workshep->get_submission_by_author($users[$reviewee]->id);
-			
-			if ($submission === false) {
-				$failures[$reviewee] = "error::No submission for {$users[$reviewee]->firstname} {$users[$reviewee]->lastname} ($reviewee)";
-				continue;
-			}
-			
-			foreach($reviewers as $i) {
-				if (empty($i)) continue;
-				if (empty($users[$i])) {
+            if (empty($reviewee)) continue;
+            if (empty($reviewers)) continue;
+            
+            if (empty($users[$reviewee])) {
+                
+                $failures[$reviewee] = "error::No user for username $reviewee";
+                continue;
+            }
+            
+            $submission = $workshep->get_submission_by_author($users[$reviewee]->id);
+            
+            if ($submission === false) {
+                $failures[$reviewee] = "error::No submission for {$users[$reviewee]->firstname} {$users[$reviewee]->lastname} ($reviewee)";
+                continue;
+            }
+            
+            foreach($reviewers as $i) {
+                if (empty($i)) continue;
+                if (empty($users[$i])) {
                     $failures[$i] = "error::No user for username $i";
                 } else if (!$workshep->useselfassessment && $reviewee == $i) {
                     $failures[$i] = "info::Self-assessment is disabled for this workshop. {$users[$reviewee]->firstname} {$users[$reviewee]->lastname} ($i) was not allocated to assess their own submission.";
-				} else {
-					$res = $workshep->add_allocation($submission, $users[$i]->id);
-				}
-			}
-		}
-	}
+                } else {
+                    $res = $workshep->add_allocation($submission, $users[$i]->id);
+                }
+            }
+        }
+    }
 
-	$SESSION->workshep_upload_messages = $failures;
+    $SESSION->workshep_upload_messages = $failures;
 }
 
 $url = new moodle_url('/mod/workshep/allocation.php', array('cmid' => $cm->id, 'method' => 'manual'));

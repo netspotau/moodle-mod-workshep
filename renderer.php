@@ -139,12 +139,12 @@ class mod_workshep_renderer extends plugin_renderer_base {
 
         return $o;
     }
-	
-	protected function helper_submission_content($submission) {
-		global $CFG;
+    
+    protected function helper_submission_content($submission) {
+        global $CFG;
 
-		$o = '';
-		
+        $o = '';
+        
         $content = file_rewrite_pluginfile_urls($submission->content, 'pluginfile.php', $this->page->context->id,
                                                         'mod_workshep', 'submission_content', $submission->id);
         $content = format_text($content, $submission->contentformat, array('overflowdiv'=>true));
@@ -162,9 +162,9 @@ class mod_workshep_renderer extends plugin_renderer_base {
         $o .= $this->output->container($this->helper_submission_wordcount($content), 'wordcount');
 
         $o .= $this->helper_submission_attachments($submission->id, 'html');
-		
-		return $o;
-	}
+        
+        return $o;
+    }
 
     /**
      * Renders short summary of the submission
@@ -251,10 +251,10 @@ class mod_workshep_renderer extends plugin_renderer_base {
 
         if (!$anonymous) {
             $a                  = new stdClass();
-    		$url				= new moodle_url('/group/overview.php',
+            $url                = new moodle_url('/group/overview.php',
                                             array('id' => $this->page->course->id, 'group' => $summary->group->id));
             $a->name            = $summary->group->name;
-    		$a->url				= $url->out();
+            $a->url             = $url->out();
 
             $byfullname         = get_string('byfullname', 'workshep', $a);
 
@@ -671,7 +671,7 @@ class mod_workshep_renderer extends plugin_renderer_base {
         $table->attributes['class'] = 'grading-report grouped';
 
         $table->head = array();
-    	$table->head[] = $this->helper_sortable_heading(get_string('groupname','group'), 'name', $options->sortby, $options->sorthow);
+        $table->head[] = $this->helper_sortable_heading(get_string('groupname','group'), 'name', $options->sortby, $options->sorthow);
         $table->head[] = $this->helper_sortable_heading(get_string('submission', 'workshep'), 'submissiontitle',
                 $options->sortby, $options->sorthow);
         $table->head[] = $this->helper_sortable_heading(get_string('receivedgrades', 'workshep'));
@@ -748,17 +748,17 @@ class mod_workshep_renderer extends plugin_renderer_base {
                 }
                 // column #6 - total grade for assessment for markers
                 if ($options->showgradinggrade and $tr % $spanreceived == 0) {
-    				$idx = intval($tr / $spanreceived);
-    				$assessment = self::array_nth($participant->reviewedby, $idx);
+                    $idx = intval($tr / $spanreceived);
+                    $assessment = self::array_nth($participant->reviewedby, $idx);
                     $cell = new html_table_cell();
 
-    				if($assessment) {
-    					$gradinggrade =	empty($userinfo[$assessment->userid]->gradinggrade) ? null : $userinfo[$assessment->userid]->gradinggrade;
+                    if($assessment) {
+                        $gradinggrade = empty($userinfo[$assessment->userid]->gradinggrade) ? null : $userinfo[$assessment->userid]->gradinggrade;
 
                        $cell->text = $this->helper_grading_report_grade($gradinggrade);
                        $cell->rowspan = $spanreceived;
                        $cell->attributes['class'] = 'gradinggrade';
-    				}
+                    }
                     $row->cells[] = $cell;
                 }
                 // column #4 - total grade for submission
@@ -906,11 +906,11 @@ class mod_workshep_renderer extends plugin_renderer_base {
 
         $o .= $this->output->container_end(); // header
 
-		if ($assessment->submission) {
-			
-			$o .= $this->container($this->helper_submission_content($assessment->submission), 'submission-full');
-		
-		}
+        if ($assessment->submission) {
+            
+            $o .= $this->container($this->helper_submission_content($assessment->submission), 'submission-full');
+        
+        }
 
         if (!is_null($assessment->form)) {
             $o .= print_collapsible_region_start('assessment-form-wrapper', uniqid('workshep-assessment'),
@@ -939,18 +939,18 @@ class mod_workshep_renderer extends plugin_renderer_base {
             }
         }
 
-		// Handle the flagged assessment resolution options
-		
-		// This is raw HTML because it's intended for use within a larger form
-		// TODO: Localisation
-		if ($assessment->resolution) {
-			$o .= <<<HTML
-			<div class="resolution">
-	<input type="radio" name="assessment_{$assessment->id}" value="1">This assessment is fair</input><br/>
-	<input type="radio" name="assessment_{$assessment->id}" value="0">This assessment is unfair and should be discounted</input>
+        // Handle the flagged assessment resolution options
+        
+        // This is raw HTML because it's intended for use within a larger form
+        // TODO: Localisation
+        if ($assessment->resolution) {
+            $o .= <<<HTML
+            <div class="resolution">
+    <input type="radio" name="assessment_{$assessment->id}" value="1">This assessment is fair</input><br/>
+    <input type="radio" name="assessment_{$assessment->id}" value="0">This assessment is unfair and should be discounted</input>
 </div>
 HTML;
-		}
+        }
         
         $o .= $this->output->container_end(); // main wrapper
 

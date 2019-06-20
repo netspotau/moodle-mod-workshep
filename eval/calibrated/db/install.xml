@@ -9,7 +9,7 @@
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="true" NEXT="workshepid"/>
         <FIELD NAME="workshepid" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="false" PREVIOUS="id" NEXT="comparison"/>
         <FIELD NAME="adjustgrades" TYPE="int" LENGTH="2" NOTNULL="true" UNSIGNED="true" SEQUENCE="false" DEFAULT="1" />
-	  </FIELDS>
+      </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id" NEXT="fkuq_workshep"/>
         <KEY NAME="fkuq_workshep" TYPE="foreign-unique" FIELDS="workshepid" REFTABLE="workshep" REFFIELDS="id" COMMENT="Every workshep can have only one settings record" PREVIOUS="primary"/>

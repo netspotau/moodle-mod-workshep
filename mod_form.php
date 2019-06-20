@@ -55,10 +55,10 @@ class mod_workshep_mod_form extends moodleform_mod {
      */
     public function definition() {
         global $CFG, $DB, $PAGE;
-		
-		$PAGE->requires->jquery();
-		$PAGE->requires->js('/mod/workshep/mod_form.js');
-		$PAGE->requires->js_init_call('M.mod_workshep.mod_form.init');
+        
+        $PAGE->requires->jquery();
+        $PAGE->requires->js('/mod/workshep/mod_form.js');
+        $PAGE->requires->js_init_call('M.mod_workshep.mod_form.init');
 
         $workshepconfig = get_config('workshep');
         $mform = $this->_form;
@@ -155,8 +155,8 @@ class mod_workshep_mod_form extends moodleform_mod {
         $text = get_string('latesubmissions_desc', 'workshep');
         $mform->addElement('checkbox', 'latesubmissions', $label, $text);
         $mform->addHelpButton('latesubmissions', 'latesubmissions', 'workshep');
-		
-  		$numgroups = $DB->count_records('groups',array('courseid' => $this->course->id));
+        
+        $numgroups = $DB->count_records('groups',array('courseid' => $this->course->id));
         $disabled = (bool)($numgroups == 0);
         
         $label = get_string('teammode', 'workshep');
@@ -233,7 +233,7 @@ class mod_workshep_mod_form extends moodleform_mod {
         $mform->addElement('select', 'examplesmode', $label, $options);
         $mform->setDefault('examplesmode', $workshepconfig->examplesmode);
         $mform->disabledIf('examplesmode', 'useexamples');
-		$mform->disabledIf('examplesmode', 'usecalibration', 'checked');
+        $mform->disabledIf('examplesmode', 'usecalibration', 'checked');
 
         $label = get_string('numexamples', 'workshep');
         $mform->addElement('select', 'numexamples', $label, array('All',1,2,3,4,5,6,7,8,9,10,11,12,13,14,15));

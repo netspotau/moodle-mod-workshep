@@ -41,27 +41,27 @@ $workshep = new workshep($workshep, $cm, $course);
 $flagged_assessments = $workshep->get_flagged_assessments();
 
 if ($_POST) {
-	
-	foreach($flagged_assessments as $a) {
-		if (isset($_POST['assessment_'.$a->id])) {
-			
-			$record = new stdClass();
-			$record->id = $a->id;
-			$record->submitterflagged = -1;
-			
-			$weight = $_POST['assessment_'.$a->id];
-			if ($weight == 0) {
-				$record->weight = 0;
-			}
-			
+    
+    foreach($flagged_assessments as $a) {
+        if (isset($_POST['assessment_'.$a->id])) {
+            
+            $record = new stdClass();
+            $record->id = $a->id;
+            $record->submitterflagged = -1;
+            
+            $weight = $_POST['assessment_'.$a->id];
+            if ($weight == 0) {
+                $record->weight = 0;
+            }
+            
             // TODO: MAKE SURE YOU UNCOMMENT THIS LINE BEFORE COMMITTING
             $DB->update_record('workshep_assessments', $record);
-			
-		}
-	}
-	
-	redirect($workshep->aggregate_url());
-	
+            
+        }
+    }
+    
+    redirect($workshep->aggregate_url());
+    
 }
 
 $PAGE->set_url($workshep->flagged_assessments_url());
@@ -79,26 +79,26 @@ $strategy = $workshep->grading_strategy_instance();
 echo html_writer::start_tag('form', array('action' => $workshep->flagged_assessments_url(), 'method' => 'post'));
 
 foreach($flagged_assessments as $assessment) {
-	$mform      = $strategy->get_assessment_form($PAGE->url, 'assessment', $assessment, false);
+    $mform      = $strategy->get_assessment_form($PAGE->url, 'assessment', $assessment, false);
     $options    = array(
         'showreviewer'  => has_capability('mod/workshep:viewreviewernames', $workshep->context),
         'showauthor'    => has_capability('mod/workshep:viewauthornames', $workshep->context),
         'showform'      => !is_null($assessment->grade),
         'showweight'    => true,
-		'showflaggingresolution' => true
+        'showflaggingresolution' => true
     );
 
-	$submission = new stdClass();
-	$submission->id = $assessment->submissionid;
-	$submission->content = $assessment->submissioncontent;
-	$submission->contentformat = $assessment->submissionformat;
-	$submission->attachment = $assessment->submissionattachment;
-	$submission->authorid = $assessment->authorid;
-		
+    $submission = new stdClass();
+    $submission->id = $assessment->submissionid;
+    $submission->content = $assessment->submissioncontent;
+    $submission->contentformat = $assessment->submissionformat;
+    $submission->attachment = $assessment->submissionattachment;
+    $submission->authorid = $assessment->authorid;
+        
     $displayassessment = $workshep->prepare_assessment_with_submission($assessment, $submission, $mform, $options);
-	echo $output->render($displayassessment);
-	
-	
+    echo $output->render($displayassessment);
+    
+    
 }
 
 echo $output->container(html_writer::empty_tag('input', array('type' => 'submit', 'value' => get_string('aggregategrades', 'workshep'))), 'center');
