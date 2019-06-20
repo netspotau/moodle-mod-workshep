@@ -4788,16 +4788,16 @@ class workshep_user_plan implements renderable {
 			$reviewers = $workshep->get_potential_reviewers();
 			$numexamples = (int)$workshep->numexamples ?: count($workshep->get_examples_for_manager());
 			$sql = <<<SQL
-SELECT a.reviewerid, count(a) 
-FROM {workshep_submissions} s 
-	LEFT JOIN {workshep_assessments} a 
-	ON a.submissionid = s.id 
-WHERE s.workshepid = :workshepid 
-	AND s.example = 1 
-	AND a.weight = 0 
+SELECT a.reviewerid, count(a.reviewerid)
+FROM {workshep_submissions} s
+	LEFT JOIN {workshep_assessments} a
+	ON a.submissionid = s.id
+WHERE s.workshepid = :workshepid
+	AND s.example = 1
+	AND a.weight = 0
 	AND a.grade IS NOT NULL
-GROUP BY a.reviewerid 
-HAVING count(a) >= :numexamples
+GROUP BY a.reviewerid
+HAVING count(a.reviewerid) >= :numexamples
 SQL;
 
 			$reviewcounts = $DB->get_records_sql($sql, array('workshepid' => $workshep->id, 'numexamples' => $numexamples));
