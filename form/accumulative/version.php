@@ -28,6 +28,6 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version  = 2014061600;
-$plugin->requires = 2014050800;  // Requires this Moodle version
+$plugin->version  = 2018051400;
+$plugin->requires = 2018050800;  // Requires this Moodle version.
 $plugin->component = 'workshepform_accumulative';

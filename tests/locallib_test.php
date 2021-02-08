@@ -35,17 +35,20 @@ require_once(__DIR__ . '/fixtures/testable.php');
  */
 class mod_workshep_internal_api_testcase extends advanced_testcase {
 
-    /** workshep instance emulation */
+    /** @var object */
+    protected $course;
+
+    /** @var workshep */
     protected $workshep;
 
     /** setup testing environment */
     protected function setUp() {
         parent::setUp();
         $this->setAdminUser();
-        $course = $this->getDataGenerator()->create_course();
-        $workshep = $this->getDataGenerator()->create_module('workshep', array('course' => $course));
-        $cm = get_coursemodule_from_instance('workshep', $workshep->id, $course->id, false, MUST_EXIST);
-        $this->workshep = new testable_workshep($workshep, $cm, $course);
+        $this->course = $this->getDataGenerator()->create_course();
+        $workshep = $this->getDataGenerator()->create_module('workshep', array('course' => $this->course));
+        $cm = get_coursemodule_from_instance('workshep', $workshep->id, $this->course->id, false, MUST_EXIST);
+        $this->workshep = new testable_workshep($workshep, $cm, $this->course);
     }
 
     protected function tearDown() {
@@ -323,7 +326,7 @@ class mod_workshep_internal_api_testcase extends advanced_testcase {
         $total = 185;
         $percent = -7.098;
         // set expectation
-        $this->setExpectedException('coding_exception');
+        $this->expectException('coding_exception');
         // exercise SUT
         $part = workshep::percent_to_value($percent, $total);
     }
@@ -334,7 +337,7 @@ class mod_workshep_internal_api_testcase extends advanced_testcase {
         $total = 185;
         $percent = 121.08;
         // set expectation
-        $this->setExpectedException('coding_exception');
+        $this->expectException('coding_exception');
         // exercise SUT
         $part = workshep::percent_to_value($percent, $total);
     }
@@ -383,7 +386,7 @@ class mod_workshep_internal_api_testcase extends advanced_testcase {
 
         // modify setup
         $fakerawrecord->weight = 1;
-        $this->setExpectedException('coding_exception');
+        $this->expectException('coding_exception');
         // excersise SUT
         $a = $this->workshep->prepare_example_assessment($fakerawrecord);
     }
@@ -412,8 +415,155 @@ class mod_workshep_internal_api_testcase extends advanced_testcase {
 
         // modify setup
         $fakerawrecord->weight = 0;
-        $this->setExpectedException('coding_exception');
+        $this->expectException('coding_exception');
         // excersise SUT
         $a = $this->workshep->prepare_example_reference_assessment($fakerawrecord);
+    }
+
+    /**
+     * Test normalizing list of extensions.
+     */
+    public function test_normalize_file_extensions() {
+        $this->resetAfterTest(true);
+
+        workshep::normalize_file_extensions('');
+        $this->assertDebuggingCalled();
+    }
+
+    /**
+     * Test cleaning list of extensions.
+     */
+    public function test_clean_file_extensions() {
+        $this->resetAfterTest(true);
+
+        workshep::clean_file_extensions('');
+        $this->assertDebuggingCalledCount(2);
+    }
+
+    /**
+     * Test validation of the list of file extensions.
+     */
+    public function test_invalid_file_extensions() {
+        $this->resetAfterTest(true);
+
+        workshep::invalid_file_extensions('', '');
+        $this->assertDebuggingCalledCount(3);
+    }
+
+    /**
+     * Test checking file name against the list of allowed extensions.
+     */
+    public function test_is_allowed_file_type() {
+        $this->resetAfterTest(true);
+
+        workshep::is_allowed_file_type('', '');
+        $this->assertDebuggingCalledCount(2);
+    }
+
+    /**
+     * Test workshep::check_group_membership() functionality.
+     */
+    public function test_check_group_membership() {
+        global $DB, $CFG;
+
+        $this->resetAfterTest();
+
+        $courseid = $this->course->id;
+        $generator = $this->getDataGenerator();
+
+        // Make test groups.
+        $group1 = $generator->create_group(array('courseid' => $courseid));
+        $group2 = $generator->create_group(array('courseid' => $courseid));
+        $group3 = $generator->create_group(array('courseid' => $courseid));
+
+        // Revoke the accessallgroups from non-editing teachers (tutors).
+        $roleids = $DB->get_records_menu('role', null, '', 'shortname, id');
+        unassign_capability('moodle/site:accessallgroups', $roleids['teacher']);
+
+        // Create test use accounts.
+        $teacher1 = $generator->create_user();
+        $tutor1 = $generator->create_user();
+        $tutor2 = $generator->create_user();
+        $student1 = $generator->create_user();
+        $student2 = $generator->create_user();
+        $student3 = $generator->create_user();
+
+        // Enrol the teacher (has the access all groups permission).
+        $generator->enrol_user($teacher1->id, $courseid, $roleids['editingteacher']);
+
+        // Enrol tutors (can not access all groups).
+        $generator->enrol_user($tutor1->id, $courseid, $roleids['teacher']);
+        $generator->enrol_user($tutor2->id, $courseid, $roleids['teacher']);
+
+        // Enrol students.
+        $generator->enrol_user($student1->id, $courseid, $roleids['student']);
+        $generator->enrol_user($student2->id, $courseid, $roleids['student']);
+        $generator->enrol_user($student3->id, $courseid, $roleids['student']);
+
+        // Add users in groups.
+        groups_add_member($group1, $tutor1);
+        groups_add_member($group2, $tutor2);
+        groups_add_member($group1, $student1);
+        groups_add_member($group2, $student2);
+        groups_add_member($group3, $student3);
+
+        // Workshep with no groups.
+        $workshepitem1 = $this->getDataGenerator()->create_module('workshep', [
+            'course' => $courseid,
+            'groupmode' => NOGROUPS,
+        ]);
+        $cm = get_coursemodule_from_instance('workshep', $workshepitem1->id, $courseid, false, MUST_EXIST);
+        $workshep1 = new testable_workshep($workshepitem1, $cm, $this->course);
+
+        $this->setUser($teacher1);
+        $this->assertTrue($workshep1->check_group_membership($student1->id));
+        $this->assertTrue($workshep1->check_group_membership($student2->id));
+        $this->assertTrue($workshep1->check_group_membership($student3->id));
+
+        $this->setUser($tutor1);
+        $this->assertTrue($workshep1->check_group_membership($student1->id));
+        $this->assertTrue($workshep1->check_group_membership($student2->id));
+        $this->assertTrue($workshep1->check_group_membership($student3->id));
+
+        // Workshep in visible groups mode.
+        $workshepitem2 = $this->getDataGenerator()->create_module('workshep', [
+            'course' => $courseid,
+            'groupmode' => VISIBLEGROUPS,
+        ]);
+        $cm = get_coursemodule_from_instance('workshep', $workshepitem2->id, $courseid, false, MUST_EXIST);
+        $workshep2 = new testable_workshep($workshepitem2, $cm, $this->course);
+
+        $this->setUser($teacher1);
+        $this->assertTrue($workshep2->check_group_membership($student1->id));
+        $this->assertTrue($workshep2->check_group_membership($student2->id));
+        $this->assertTrue($workshep2->check_group_membership($student3->id));
+
+        $this->setUser($tutor1);
+        $this->assertTrue($workshep2->check_group_membership($student1->id));
+        $this->assertTrue($workshep2->check_group_membership($student2->id));
+        $this->assertTrue($workshep2->check_group_membership($student3->id));
+
+        // Workshep in separate groups mode.
+        $workshepitem3 = $this->getDataGenerator()->create_module('workshep', [
+            'course' => $courseid,
+            'groupmode' => SEPARATEGROUPS,
+        ]);
+        $cm = get_coursemodule_from_instance('workshep', $workshepitem3->id, $courseid, false, MUST_EXIST);
+        $workshep3 = new testable_workshep($workshepitem3, $cm, $this->course);
+
+        $this->setUser($teacher1);
+        $this->assertTrue($workshep3->check_group_membership($student1->id));
+        $this->assertTrue($workshep3->check_group_membership($student2->id));
+        $this->assertTrue($workshep3->check_group_membership($student3->id));
+
+        $this->setUser($tutor1);
+        $this->assertTrue($workshep3->check_group_membership($student1->id));
+        $this->assertFalse($workshep3->check_group_membership($student2->id));
+        $this->assertFalse($workshep3->check_group_membership($student3->id));
+
+        $this->setUser($tutor2);
+        $this->assertFalse($workshep3->check_group_membership($student1->id));
+        $this->assertTrue($workshep3->check_group_membership($student2->id));
+        $this->assertFalse($workshep3->check_group_membership($student3->id));
     }
 }

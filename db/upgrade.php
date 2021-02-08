@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -24,6 +23,8 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+defined('MOODLE_INTERNAL') || die();
+
 /**
  * Performs upgrade of the database structure and data
  *
@@ -34,240 +35,106 @@
  * @return bool result
  */
 function xmldb_workshep_upgrade($oldversion) {
-    global $CFG, $DB, $OUTPUT;
+    global $CFG, $DB;
 
     $dbman = $DB->get_manager();
 
-    // Moodle v2.2.0 release upgrade line
-
-    if ($oldversion < 2012033100) {
-        // add the field 'phaseswitchassessment' to the 'workshep' table
-        $table = new xmldb_table('workshep');
-        $field = new xmldb_field('phaseswitchassessment', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '0', 'assessmentend');
-        if (!$dbman->field_exists($table, $field)) {
-            $dbman->add_field($table, $field);
-        }
-        upgrade_mod_savepoint(true, 2012033100, 'workshep');
-    }
-
-    /**
-     * Remove all workshep calendar events
-     */
-    if ($oldversion < 2012041700) {
-        require_once($CFG->dirroot . '/calendar/lib.php');
-        $events = $DB->get_records('event', array('modulename' => 'workshep'));
-        foreach ($events as $event) {
-            $event = calendar_event::load($event);
-            $event->delete();
-        }
-        upgrade_mod_savepoint(true, 2012041700, 'workshep');
-    }
-
-    /**
-     * Recreate all workshep calendar events
-     */
-    if ($oldversion < 2012041701) {
-        require_once(dirname(dirname(__FILE__)) . '/lib.php');
-
-        $sql = "SELECT w.id, w.course, w.name, w.intro, w.introformat, w.submissionstart,
-                       w.submissionend, w.assessmentstart, w.assessmentend,
-                       cm.id AS cmid
-                  FROM {workshep} w
-                  JOIN {modules} m ON m.name = 'workshep'
-                  JOIN {course_modules} cm ON (cm.module = m.id AND cm.course = w.course AND cm.instance = w.id)";
-
-        $rs = $DB->get_recordset_sql($sql);
-
-        foreach ($rs as $workshep) {
-            $cmid = $workshep->cmid;
-            unset($workshep->cmid);
-            workshep_calendar_update($workshep, $cmid);
-        }
-        $rs->close();
-        upgrade_mod_savepoint(true, 2012041701, 'workshep');
-    }
-
-    // Moodle v2.3.0 release upgrade line
-
-    /**
-     * Add new fields conclusion and conclusionformat
-     */
-    if ($oldversion < 2012102400) {
-        $table = new xmldb_table('workshep');
-
-        $field = new xmldb_field('conclusion', XMLDB_TYPE_TEXT, null, null, null, null, null, 'phaseswitchassessment');
-        if (!$dbman->field_exists($table, $field)) {
-            $dbman->add_field($table, $field);
-        }
-
-        $field = new xmldb_field('conclusionformat', XMLDB_TYPE_INTEGER, '3', null, XMLDB_NOTNULL, null, '1', 'conclusion');
-        if (!$dbman->field_exists($table, $field)) {
-            $dbman->add_field($table, $field);
-        }
-
-        upgrade_mod_savepoint(true, 2012102400, 'workshep');
-    }
-
-
-    // Moodle v2.4.0 release upgrade line
-    // Put any upgrade step following this
-
-    /**
-     * Add overall feedback related fields into the workshep table.
-     */
-    if ($oldversion < 2013032500) {
-        $table = new xmldb_table('workshep');
-
-		if (! $dbman->field_exists('workshep','teammode')) {
-			$field = new xmldb_field('teammode', XMLDB_TYPE_INTEGER, '2', XMLDB_UNSIGNED, XMLDB_NOTNULL, false, '0');
-			$dbman->add_field($table, $field);
-		}
-
-        $field = new xmldb_field('overallfeedbackmode', XMLDB_TYPE_INTEGER, '3', null, null, null, '1', 'conclusionformat');
-        if (!$dbman->field_exists($table, $field)) {
-            $dbman->add_field($table, $field);
-        }
-
-        $field = new xmldb_field('overallfeedbackfiles', XMLDB_TYPE_INTEGER, '3', null, null, null, '0', 'overallfeedbackmode');
-        if (!$dbman->field_exists($table, $field)) {
-            $dbman->add_field($table, $field);
-        }
-
-        $field = new xmldb_field('overallfeedbackmaxbytes', XMLDB_TYPE_INTEGER, '10', null, null, null, '100000', 'overallfeedbackfiles');
-        if (!$dbman->field_exists($table, $field)) {
-            $dbman->add_field($table, $field);
-        }
-
-        upgrade_mod_savepoint(true, 2013032500, 'workshep');
-    }
-
-    /**
-     * Add feedbackauthorattachment field into the workshep_assessments table.
-     */
-    if ($oldversion < 2013032501) {
-
-        $table = new xmldb_table('workshep_assessments');
-        $field = new xmldb_field('feedbackauthorattachment', XMLDB_TYPE_INTEGER, '3', null, null, null, '0', 'feedbackauthorformat');
-        if (!$dbman->field_exists($table, $field)) {
-            $dbman->add_field($table, $field);
-        }
-
-
-        if (!$dbman->field_exists('workshep', 'examplescompare')) {
-            $field = new xmldb_field('examplescompare', XMLDB_TYPE_INTEGER, '2', XMLDB_UNSIGNED, XMLDB_NOTNULL, false, '1');
-            $dbman->add_field($table, $field);
-        }
-
-        if (!$dbman->field_exists('workshep', 'examplesreassess')) {
-            $field = new xmldb_field('examplesreassess', XMLDB_TYPE_INTEGER, '2', XMLDB_UNSIGNED, XMLDB_NOTNULL, false, '1');
-            $dbman->add_field($table, $field);
-        }
-
-        $field = new xmldb_field('numexamples', XMLDB_TYPE_INTEGER, '2', XMLDB_UNSIGNED, XMLDB_NOTNULL, false, '0');
-        if (!$dbman->field_exists($table, $field)) {
-            $dbman->add_field($table, $field);
-        }
-
-        // Define table workshep_user_examples to be created
-        $table = new xmldb_table('workshep_user_examples');
-
-        // Adding fields to table workshep_user_examples
-        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
-        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
-        $table->add_field('submissionid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
-        $table->add_field('workshepid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
-
-        // Adding keys to table workshep_user_examples
-        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
-
-        // Conditionally launch create table for workshep_user_examples
-        if (!$dbman->table_exists($table)) {
-            $dbman->create_table($table);
-        }
-
-        upgrade_mod_savepoint(true, 2013032501, 'workshep');
-
-    }
-
-    // Add unique index to assessments table to improve assesment allocation.
-    if ($oldversion < 2014042900) {
-
-        $index = new xmldb_index('submissionreviewer', XMLDB_INDEX_UNIQUE, array('submissionid', 'reviewerid'));
-        $table = new xmldb_table('workshep_assessments');
-
-        if (!$dbman->index_exists($table, $index)) {
-            $dbman->add_index($table, $index);
-        }
-
-        upgrade_mod_savepoint(true, 2014042900, 'workshep');
-    }
-
-    // Moodle v2.6.0 release upgrade line.
+    // Automatically generated Moodle v3.2.0 release upgrade line.
     // Put any upgrade step following this.
 
-    // Moodle v2.7.0 release upgrade line.
+    // Automatically generated Moodle v3.3.0 release upgrade line.
     // Put any upgrade step following this.
 
-    
-    if ($oldversion < 2014092600) {
-        $table = new xmldb_table('workshep_assessments');
-        $field = new xmldb_field('submitterflagged', XMLDB_TYPE_INTEGER, '2', XMLDB_UNSIGNED, XMLDB_NOTNULL, false, '0');
-        if (!$dbman->field_exists($table, $field)) {
-            $dbman->add_field($table, $field);
+    // Automatically generated Moodle v3.4.0 release upgrade line.
+    // Put any upgrade step following this.
+
+    if ($oldversion < 2018042700) {
+        // Drop the old Moodle 1.x tables, thanks privacy by design for forcing me to do so finally.
+
+        $oldtables = ['workshep_old', 'workshep_elements_old', 'workshep_rubrics_old', 'workshep_submissions_old',
+            'workshep_assessments_old', 'workshep_grades_old', 'workshep_stockcomments_old', 'workshep_comments_old'];
+
+        foreach ($oldtables as $oldtable) {
+            $table = new xmldb_table($oldtable);
+
+            if ($dbman->table_exists($table)) {
+                $dbman->drop_table($table);
+            }
         }
-        
-        upgrade_mod_savepoint(true, 2014092600, 'workshep');
+
+        upgrade_mod_savepoint(true, 2018042700, 'workshep');
     }
-    
-    if ($oldversion < 2014092601) {
+
+    // Automatically generated Moodle v3.5.0 release upgrade line.
+    // Put any upgrade step following this.
+
+    if ($oldversion < 2016120600) {
+        // Add field nosubmissionrequired to the table workshep.
         $table = new xmldb_table('workshep');
-        
-        $field = new xmldb_field('usecalibration', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, false, '0');
+        $field = new xmldb_field('nosubmissionrequired', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
+
         if (!$dbman->field_exists($table, $field)) {
             $dbman->add_field($table, $field);
         }
-        
-        $field = new xmldb_field('calibrationphase', XMLDB_TYPE_INTEGER, '3', null, XMLDB_NOTNULL, false, '0');
+
+        upgrade_mod_savepoint(true, 2016120600, 'workshep');
+    }
+
+    if ($oldversion < 2016120601) {
+        // Add field autorecalculate to the table workshep.
+        $table = new xmldb_table('workshep');
+        $field = new xmldb_field('autorecalculate', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
+
         if (!$dbman->field_exists($table, $field)) {
             $dbman->add_field($table, $field);
         }
-        
-        $field = new xmldb_field('calibrationmethod', XMLDB_TYPE_CHAR, '30', null, XMLDB_NOTNULL, false, 'examples');
+
+        upgrade_mod_savepoint(true, 2016120601, 'workshep');
+    }
+
+    if ($oldversion < 2016120602) {
+        // Add field calibration comparison to the table workshep.
+        $table = new xmldb_table('workshep');
+        $field = new xmldb_field('calibrationcomparison', XMLDB_TYPE_INTEGER, '5', null, XMLDB_NOTNULL, null, '0');
+
         if (!$dbman->field_exists($table, $field)) {
             $dbman->add_field($table, $field);
         }
-        
+
+        // Add field calibration comparison to the table workshep.
+        $table = new xmldb_table('workshep');
+        $field = new xmldb_field('calibrationconsistency', XMLDB_TYPE_INTEGER, '5', null, XMLDB_NOTNULL, null, '0');
+
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2016120602, 'workshep');
+    }
+
+    if ($oldversion < 2017081601) {
+
         $table = new xmldb_table('workshep_calibration');
-
-        // Adding fields to table workshep_user_examples
         $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
         $table->add_field('workshepid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
         $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
-        $table->add_field('score', XMLDB_TYPE_FLOAT, '10', null, XMLDB_NOTNULL);
-        
-        // Adding keys to table workshep_user_examples
-        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
-        $table->add_key('wkshusrunq', XMLDB_KEY_UNIQUE, array('workshepid', 'userid'));
+        $table->add_field('score', XMLDB_TYPE_NUMBER, '10, 5', null, null, null, null, 'userid');
+        $field = new xmldb_field('score', XMLDB_TYPE_NUMBER, '10, 5', null, null, null, null, 'userid');
 
-        // Conditionally launch create table for workshep_user_examples
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+
+        // Conditionally launch create table for workshep_calibration
         if (!$dbman->table_exists($table)) {
             $dbman->create_table($table);
+        } else {
+            // Launch change of nullability for field score.
+            $dbman->change_field_type($table, $field);
+            $dbman->change_field_precision($table, $field);
+            $dbman->change_field_notnull($table, $field);
         }
-        
-        upgrade_mod_savepoint(true, 2014092601, 'workshep');
-    }
-	
-	if ($oldversion < 2014092602) {
-		$table = new xmldb_table('workshep');
-		
-		$field = new xmldb_field('submitterflagging', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, false, '1');
-        if (!$dbman->field_exists($table, $field)) {
-            $dbman->add_field($table, $field);
-        }
-		
-		upgrade_mod_savepoint(true, 2014092602, 'workshep');
-	}
 
+        upgrade_mod_savepoint(true, 2017081601, 'workshep');
+    }
 
     return true;
 }

@@ -24,8 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version  = 2014101600;
-$plugin->requires = 2014050800;
+$plugin->version  = 2015051100;
+$plugin->requires = 2015050500;
 $plugin->component = 'workshepallocation_static';
 $plugin->dependencies = array(
     'workshepcalibration_examples' => ANY_VERSION

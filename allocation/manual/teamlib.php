@@ -171,10 +171,10 @@ class workshep_teammode_manual_allocator extends workshep_manual_allocator {
         $participants = get_users_by_capability($PAGE->context, array('mod/workshep:submit', 'mod/workshep:peerassess'),
                                             'u.id', 'u.lastname,u.firstname,u.id', '', '', '', '', false, false, true);
 
-		// TEAMMODE :: Morgan Harris
-		// this introduces a new variable, $gradeitems, that replaces $participants in some cases
-		// basically in team mode you get a list of *groups* not people
-		
+        // TEAMMODE :: Morgan Harris
+        // this introduces a new variable, $gradeitems, that replaces $participants in some cases
+        // basically in team mode you get a list of *groups* not people
+        
         list($insql, $params) = $DB->get_in_or_equal(array_keys($participants));
         
         $groupingsql = '';
@@ -185,7 +185,7 @@ class workshep_teammode_manual_allocator extends workshep_manual_allocator {
             $groupingsql = " AND g.id $groupingsql";
         }
         
-		$sql = <<<SQL
+        $sql = <<<SQL
 SELECT g.id, g.name
 FROM {groups} g
 JOIN {groups_members} m ON m.groupid = g.id
@@ -194,9 +194,9 @@ GROUP BY g.id, g.name
 ORDER BY g.name
 SQL;
 
-		$rslt = $DB->get_records_sql($sql, array_merge($params, $params2));
-			
-		$gradeitems = $rslt;
+        $rslt = $DB->get_records_sql($sql, array_merge($params, $params2));
+            
+        $gradeitems = $rslt;
 
         $numofparticipants = count($gradeitems);  // we will need later for the pagination
 
@@ -215,7 +215,7 @@ SQL;
         $userinfo = $DB->get_records_list('user', 'id', array_keys($participants), '', user_picture::fields());
 
         // load the participants' submissions
-	    $submissions = $this->workshep->get_submissions_grouped();
+        $submissions = $this->workshep->get_submissions_grouped();
         
         foreach ($submissions as $submission) {
             if (!isset($userinfo[$submission->authorid])) {
@@ -232,7 +232,7 @@ SQL;
         // get current reviewers
         $reviewers = array();
         if ($submissions) {
-			$keys = array_keys( $submissions );
+            $keys = array_keys( $submissions );
             list($submissionids, $params) = $DB->get_in_or_equal($keys, SQL_PARAMS_NAMED);
             $sql = "SELECT a.id AS assessmentid, a.submissionid,
                            r.id AS reviewerid, r.lastname, r.firstname, r.picture, r.imagealt, r.email,
@@ -261,8 +261,8 @@ SQL;
 
         foreach ($gradeitems as $participant) {
             $allocations[$participant->id] = new stdClass();
-        	$allocations[$participant->id]->groupid = $participant->id;
-        	$allocations[$participant->id]->group = $participant;
+            $allocations[$participant->id]->groupid = $participant->id;
+            $allocations[$participant->id]->group = $participant;
             $allocations[$participant->id]->submissionid = null;
             $allocations[$participant->id]->reviewedby = array();
             $allocations[$participant->id]->reviewerof = array();
@@ -270,44 +270,44 @@ SQL;
         }
         unset($participants);
 
-		//as we're iterating over this list, we also need to check if all the names are unique for our upload script
-		$allgroupnames = array();
+        //as we're iterating over this list, we also need to check if all the names are unique for our upload script
+        $allgroupnames = array();
 
         foreach ($submissions as $submission) {
-	        $id = $submission->group->id;
+            $id = $submission->group->id;
             $allocations[$id]->submissionid = $submission->id;
             $allocations[$id]->submissiontitle = $submission->title;
             $allocations[$id]->submissiongrade = $submission->grade;
             $allocations[$id]->userid = $submission->authorid;
-			$allgroupnames[$id] = $submission->group->name;
+            $allgroupnames[$id] = $submission->group->name;
         }
-		
-		$duplicategroupnames = array_unique(array_diff_assoc($allgroupnames,array_unique($allgroupnames)));
+        
+        $duplicategroupnames = array_unique(array_diff_assoc($allgroupnames,array_unique($allgroupnames)));
         
         foreach($reviewers as $reviewer) {
-			$id = $submissions[$reviewer->submissionid];
+            $id = $submissions[$reviewer->submissionid];
             $allocations[$id->group->id]->reviewedby[$reviewer->reviewerid] = $reviewer->assessmentid;
         }
         unset($reviewers);
 
-		unset($submissions);
+        unset($submissions);
         
         foreach($userinfo as $k => $u) {
-	        $userinfo[$k]->groups = groups_get_all_groups($this->workshep->cm->course, $u->id, $this->workshep->cm->groupingid, 'g.id');
+            $userinfo[$k]->groups = groups_get_all_groups($this->workshep->cm->course, $u->id, $this->workshep->cm->groupingid, 'g.id');
         }
 
         // prepare data to be rendered
         $data                   = new workshepallocation_teammode_manual_allocations();
         $data->allocations      = $allocations;
-        $data->gradeitems		= $gradeitems;
+        $data->gradeitems       = $gradeitems;
         $data->userinfo         = $userinfo;
-		$data->groupduplicates  = $duplicategroupnames;
+        $data->groupduplicates  = $duplicategroupnames;
         $data->authors          = $this->workshep->get_potential_authors();
         $data->reviewers        = $this->workshep->get_potential_reviewers();
         $data->hlauthorid       = $hlauthorid;
         $data->hlreviewerid     = $hlreviewerid;
         $data->selfassessment   = $this->workshep->useselfassessment;
-        $data->gradeitems		= $gradeitems;
+        $data->gradeitems       = $gradeitems;
 
         // prepare paging bar
         $pagingbar              = new paging_bar($numofparticipants, $page, $perpage, $PAGE->url, $pagingvar);
@@ -344,7 +344,7 @@ class workshepallocation_teammode_manual_allocations implements renderable {
     public $allocations;
     public $gradeitems;
     public $userinfo;
-	public $groupduplicates;
+    public $groupduplicates;
     public $authors;
     public $reviewers;
     public $hlauthorid;

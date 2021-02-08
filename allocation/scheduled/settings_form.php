@@ -63,24 +63,23 @@ class workshep_scheduled_allocator_form extends workshep_random_allocator_form {
 
         if ($current === false) {
             $mform->addElement('static', 'infostatus', get_string('currentstatusexecution', 'workshepallocation_scheduled'),
-                get_string('resultdisabled', 'workshepallocation_scheduled').' '.
-                html_writer::empty_tag('img', array('src' => $OUTPUT->pix_url('i/invalid'))));
+                get_string('resultdisabled', 'workshepallocation_scheduled').' '. $OUTPUT->pix_icon('i/invalid', ''));
 
         } else {
             if (!empty($current->timeallocated)) {
                 $mform->addElement('static', 'infostatus', get_string('currentstatusexecution', 'workshepallocation_scheduled'),
                     get_string('currentstatusexecution1', 'workshepallocation_scheduled', $strtimeexecuted).' '.
-                    html_writer::empty_tag('img', array('src' => $OUTPUT->pix_url('i/valid'))));
+                    $OUTPUT->pix_icon('i/valid', ''));
 
                 if ($current->resultstatus == workshep_allocation_result::STATUS_EXECUTED) {
                     $strstatus = get_string('resultexecuted', 'workshepallocation_scheduled').' '.
-                        html_writer::empty_tag('img', array('src' => $OUTPUT->pix_url('i/valid')));
+                        $OUTPUT->pix_icon('i/valid', '');
                 } else if ($current->resultstatus == workshep_allocation_result::STATUS_FAILED) {
                     $strstatus = get_string('resultfailed', 'workshepallocation_scheduled').' '.
-                        html_writer::empty_tag('img', array('src' => $OUTPUT->pix_url('i/invalid')));
+                        $OUTPUT->pix_icon('i/valid', '');
                 } else {
                     $strstatus = get_string('resultvoid', 'workshepallocation_scheduled').' '.
-                        html_writer::empty_tag('img', array('src' => $OUTPUT->pix_url('i/invalid')));
+                        $OUTPUT->pix_icon('i/valid', '');
                 }
 
                 if (!empty($current->resultmessage)) {
@@ -91,7 +90,7 @@ class workshep_scheduled_allocator_form extends workshep_random_allocator_form {
                 if ($current->timeallocated < $workshep->submissionend) {
                     $mform->addElement('static', 'infoexpected', get_string('currentstatusnext', 'workshepallocation_scheduled'),
                         get_string('currentstatusexecution2', 'workshepallocation_scheduled', $strtimeexpected).' '.
-                        html_writer::empty_tag('img', array('src' => $OUTPUT->pix_url('i/caution'))));
+                            $OUTPUT->pix_icon('i/caution', ''));
                     $mform->addHelpButton('infoexpected', 'currentstatusnext', 'workshepallocation_scheduled');
                 } else {
                     $mform->addElement('checkbox', 'reenablescheduled', get_string('currentstatusreset', 'workshepallocation_scheduled'),
@@ -102,19 +101,19 @@ class workshep_scheduled_allocator_form extends workshep_random_allocator_form {
             } else if (empty($current->enabled)) {
                 $mform->addElement('static', 'infostatus', get_string('currentstatusexecution', 'workshepallocation_scheduled'),
                     get_string('resultdisabled', 'workshepallocation_scheduled').' '.
-                    html_writer::empty_tag('img', array('src' => $OUTPUT->pix_url('i/invalid'))));
+                    $OUTPUT->pix_icon('i/invalid', ''));
 
             } else if ($workshep->phase != workshep::PHASE_SUBMISSION) {
                 $mform->addElement('static', 'infostatus', get_string('currentstatusexecution', 'workshepallocation_scheduled'),
                     get_string('resultfailed', 'workshepallocation_scheduled').' '.
-                    html_writer::empty_tag('img', array('src' => $OUTPUT->pix_url('i/invalid'))).
+                    $OUTPUT->pix_icon('i/invalid', '') .
                     html_writer::empty_tag('br').
                     get_string('resultfailedphase', 'workshepallocation_scheduled'));
 
             } else if (empty($workshep->submissionend)) {
                 $mform->addElement('static', 'infostatus', get_string('currentstatusexecution', 'workshepallocation_scheduled'),
                     get_string('resultfailed', 'workshepallocation_scheduled').' '.
-                    html_writer::empty_tag('img', array('src' => $OUTPUT->pix_url('i/invalid'))).
+                    $OUTPUT->pix_icon('i/invalid', '') .
                     html_writer::empty_tag('br').
                     get_string('resultfaileddeadline', 'workshepallocation_scheduled'));
 
@@ -122,12 +121,12 @@ class workshep_scheduled_allocator_form extends workshep_random_allocator_form {
                 // next cron will execute it
                 $mform->addElement('static', 'infostatus', get_string('currentstatusexecution', 'workshepallocation_scheduled'),
                     get_string('currentstatusexecution4', 'workshepallocation_scheduled').' '.
-                    html_writer::empty_tag('img', array('src' => $OUTPUT->pix_url('i/caution'))));
+                    $OUTPUT->pix_icon('i/caution', ''));
 
             } else {
                 $mform->addElement('static', 'infostatus', get_string('currentstatusexecution', 'workshepallocation_scheduled'),
                     get_string('currentstatusexecution3', 'workshepallocation_scheduled', $strtimeexpected).' '.
-                    html_writer::empty_tag('img', array('src' => $OUTPUT->pix_url('i/caution'))));
+                    $OUTPUT->pix_icon('i/caution', ''));
             }
         }
 

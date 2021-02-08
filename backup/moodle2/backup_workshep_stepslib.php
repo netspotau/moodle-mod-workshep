@@ -53,14 +53,14 @@ class backup_workshep_activity_structure_step extends backup_activity_structure_
             'instructauthorsformat', 'instructreviewers',
             'instructreviewersformat', 'timemodified', 'phase', 'useexamples',
             'usepeerassessment', 'useselfassessment', 'grade', 'gradinggrade',
-            'strategy', 'evaluation', 'gradedecimals', 'nattachments',
+            'strategy', 'evaluation', 'gradedecimals', 'nattachments', 'submissionfiletypes',
             'latesubmissions', 'maxbytes', 'examplesmode', 'submissionstart',
             'submissionend', 'assessmentstart', 'assessmentend',
             'conclusion', 'conclusionformat', 'overallfeedbackmode',
             'overallfeedbackfiles', 'overallfeedbackmaxbytes', 'teammode',
-			'examplescompare', 'examplesreassess', 'numexamples',
-			'calibrationphase', 'usecalibration', 'calibrationmethod',
-			));
+            'examplescompare', 'examplesreassess', 'numexamples',
+            'calibrationphase', 'usecalibration', 'autorecalculate', 'calibrationmethod',
+            ));
 
         // assessment forms definition
         $this->add_subplugin_structure('workshepform', $workshep, true);

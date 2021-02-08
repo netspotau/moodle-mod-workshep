@@ -104,7 +104,8 @@ class restore_workshep_activity_structure_step extends restore_activity_structur
         $oldid = $data->id;
         $data->course = $this->get_courseid();
 
-        $data->timemodified = $this->apply_date_offset($data->timemodified);
+        // Any changes to the list of dates that needs to be rolled should be same during course restore and course reset.
+        // See MDL-9367.
         $data->submissionstart = $this->apply_date_offset($data->submissionstart);
         $data->submissionend = $this->apply_date_offset($data->submissionend);
         $data->assessmentstart = $this->apply_date_offset($data->assessmentstart);
@@ -125,8 +126,6 @@ class restore_workshep_activity_structure_step extends restore_activity_structur
         $data->workshepid = $this->get_new_parentid('workshep');
         $data->example = 1;
         $data->authorid = $this->task->get_userid();
-        $data->timecreated = $this->apply_date_offset($data->timecreated);
-        $data->timemodified = $this->apply_date_offset($data->timemodified);
 
         $newitemid = $DB->insert_record('workshep_submissions', $data);
         $this->set_mapping('workshep_examplesubmission', $oldid, $newitemid, true); // Mapping with files
@@ -140,8 +139,6 @@ class restore_workshep_activity_structure_step extends restore_activity_structur
 
         $data->submissionid = $this->get_new_parentid('workshep_examplesubmission');
         $data->reviewerid = $this->task->get_userid();
-        $data->timecreated = $this->apply_date_offset($data->timecreated);
-        $data->timemodified = $this->apply_date_offset($data->timemodified);
 
         $newitemid = $DB->insert_record('workshep_assessments', $data);
         $this->set_mapping('workshep_referenceassessment', $oldid, $newitemid, true); // Mapping with files
@@ -155,8 +152,6 @@ class restore_workshep_activity_structure_step extends restore_activity_structur
 
         $data->submissionid = $this->get_new_parentid('workshep_examplesubmission');
         $data->reviewerid = $this->get_mappingid('user', $data->reviewerid);
-        $data->timecreated = $this->apply_date_offset($data->timecreated);
-        $data->timemodified = $this->apply_date_offset($data->timemodified);
 
         $newitemid = $DB->insert_record('workshep_assessments', $data);
         $this->set_mapping('workshep_exampleassessment', $oldid, $newitemid, true); // Mapping with files
@@ -171,8 +166,6 @@ class restore_workshep_activity_structure_step extends restore_activity_structur
         $data->workshepid = $this->get_new_parentid('workshep');
         $data->example = 0;
         $data->authorid = $this->get_mappingid('user', $data->authorid);
-        $data->timecreated = $this->apply_date_offset($data->timecreated);
-        $data->timemodified = $this->apply_date_offset($data->timemodified);
 
         $newitemid = $DB->insert_record('workshep_submissions', $data);
         $this->set_mapping('workshep_submission', $oldid, $newitemid, true); // Mapping with files
@@ -186,8 +179,6 @@ class restore_workshep_activity_structure_step extends restore_activity_structur
 
         $data->submissionid = $this->get_new_parentid('workshep_submission');
         $data->reviewerid = $this->get_mappingid('user', $data->reviewerid);
-        $data->timecreated = $this->apply_date_offset($data->timecreated);
-        $data->timemodified = $this->apply_date_offset($data->timemodified);
 
         $newitemid = $DB->insert_record('workshep_assessments', $data);
         $this->set_mapping('workshep_assessment', $oldid, $newitemid, true); // Mapping with files
@@ -201,9 +192,9 @@ class restore_workshep_activity_structure_step extends restore_activity_structur
 
         $data->workshepid = $this->get_new_parentid('workshep');
         $data->userid = $this->get_mappingid('user', $data->userid);
-        $data->timegraded = $this->apply_date_offset($data->timegraded);
 
         $newitemid = $DB->insert_record('workshep_aggregations', $data);
+        $this->set_mapping('workshep_aggregation', $oldid, $newitemid, true);
     }
 
     protected function after_execute() {

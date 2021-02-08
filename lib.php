@@ -30,6 +30,11 @@ defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/calendar/lib.php');
 
+define('WORKSHEP_EVENT_TYPE_SUBMISSION_OPEN',   'opensubmission');
+define('WORKSHEP_EVENT_TYPE_SUBMISSION_CLOSE',  'closesubmission');
+define('WORKSHEP_EVENT_TYPE_ASSESSMENT_OPEN',   'openassessment');
+define('WORKSHEP_EVENT_TYPE_ASSESSMENT_CLOSE',  'closeassessment');
+
 ////////////////////////////////////////////////////////////////////////////////
 // Moodle core API                                                            //
 ////////////////////////////////////////////////////////////////////////////////
@@ -46,7 +51,6 @@ function workshep_supports($feature) {
         case FEATURE_GRADE_HAS_GRADE:   return true;
         case FEATURE_GROUPS:            return true;
         case FEATURE_GROUPINGS:         return true;
-        case FEATURE_GROUPMEMBERSONLY:  return true;
         case FEATURE_MOD_INTRO:         return true;
         case FEATURE_BACKUP_MOODLE2:    return true;
         case FEATURE_COMPLETION_TRACKS_VIEWS:
@@ -78,29 +82,60 @@ function workshep_add_instance(stdclass $workshep) {
     $workshep->useexamples           = (int)!empty($workshep->useexamples);
     $workshep->usepeerassessment     = 1;
     $workshep->useselfassessment     = (int)!empty($workshep->useselfassessment);
-    $workshep->usecalibration        = (int)!empty($workshep->useselfassessment);
+    $workshep->usecalibration        = (int)!empty($workshep->usecalibration);
+    $workshep->autorecalculate       = (int)!empty($workshep->autorecalculate);
     $workshep->latesubmissions       = (int)!empty($workshep->latesubmissions);
     $workshep->phaseswitchassessment = (int)!empty($workshep->phaseswitchassessment);
     $workshep->teammode              = (int)!empty($workshep->teammode);
+    $workshep->nosubmissionrequired  = (int)!empty($workshep->nosubmissionrequired);
     $workshep->examplescompare       = (int)!empty($workshep->examplescompare);
     $workshep->examplesreassess      = (int)!empty($workshep->examplesreassess);
     $workshep->evaluation            = 'best';
 
-	if ($workshep->usecalibration) {
+    $plugindefaults = get_config('workshepcalibration_examples');
+    if (empty($workshep->calibrationcomparison)) {
+        $workshep->calibrationcomparison = $plugindefaults->accuracy;
+    }
 
-		//here's a fun fact: disabling a checkbox stops it from being submitted with the form
-		$workshep->useexamples = true;
-		switch($workshep->calibrationphase) {
-			case workshep::PHASE_SETUP:
-				$workshep->examplesmode = workshep::EXAMPLES_BEFORE_SUBMISSION;
-				break;
-			case workshep::PHASE_SUBMISSION:
-				$workshep->examplesmode = workshep::EXAMPLES_BEFORE_ASSESSMENT;
-				break;
-		}
+    if (empty($workshep->calibrationconsistency)) {
+        $workshep->calibrationconsistency = $plugindefaults->consistence;
+    }
 
-		$workshep->evaluation = 'calibrated';
-	}
+    if ($workshep->usecalibration) {
+
+        //here's a fun fact: disabling a checkbox stops it from being submitted with the form
+        $workshep->useexamples = true;
+        switch($workshep->calibrationphase) {
+            case workshep::PHASE_SETUP:
+                $workshep->examplesmode = workshep::EXAMPLES_BEFORE_SUBMISSION;
+                break;
+            case workshep::PHASE_SUBMISSION:
+                $workshep->examplesmode = workshep::EXAMPLES_BEFORE_ASSESSMENT;
+                break;
+        }
+
+        $workshep->evaluation = 'calibrated';
+    }
+
+    if (isset($workshep->gradinggradepass)) {
+        $workshep->gradinggradepass = (float)unformat_float($workshep->gradinggradepass);
+    }
+
+    if (isset($workshep->submissiongradepass)) {
+        $workshep->submissiongradepass = (float)unformat_float($workshep->submissiongradepass);
+    }
+
+    if (isset($workshep->submissionfiletypes)) {
+        $filetypesutil = new \core_form\filetypes_util();
+        $submissionfiletypes = $filetypesutil->normalize_file_types($workshep->submissionfiletypes);
+        $workshep->submissionfiletypes = implode(' ', $submissionfiletypes);
+    }
+
+    if (isset($workshep->overallfeedbackfiletypes)) {
+        $filetypesutil = new \core_form\filetypes_util();
+        $overallfeedbackfiletypes = $filetypesutil->normalize_file_types($workshep->overallfeedbackfiletypes);
+        $workshep->overallfeedbackfiletypes = implode(' ', $overallfeedbackfiletypes);
+    }
 
     // insert the new record so we get the id
     $workshep->id = $DB->insert_record('workshep', $workshep);
@@ -138,6 +173,9 @@ function workshep_add_instance(stdclass $workshep) {
 
     // create calendar events
     workshep_calendar_update($workshep, $workshep->coursemodule);
+    if (!empty($workshep->completionexpected)) {
+        \core_completion\api::update_completion_date_event($cmid, 'workshep', $workshep->id, $workshep->completionexpected);
+    }
 
     return $workshep->id;
 }
@@ -162,32 +200,63 @@ function workshep_update_instance(stdclass $workshep) {
     $workshep->latesubmissions       = (int)!empty($workshep->latesubmissions);
     $workshep->phaseswitchassessment = (int)!empty($workshep->phaseswitchassessment);
     $workshep->teammode              = (int)!empty($workshep->teammode);
+    $workshep->nosubmissionrequired  = (int)!empty($workshep->nosubmissionrequired);
     $workshep->examplescompare       = (int)!empty($workshep->examplescompare);
     $workshep->examplesreassess      = (int)!empty($workshep->examplesreassess);
     $workshep->usecalibration        = (int)!empty($workshep->usecalibration);
+    $workshep->autorecalculate       = (int)!empty($workshep->autorecalculate);
+
+    $plugindefaults = get_config('workshepcalibration_examples');
+    if (empty($workshep->calibrationcomparison)) {
+        $workshep->calibrationcomparison = $plugindefaults->accuracy;
+    }
+
+    if (empty($workshep->calibrationconsistency)) {
+        $workshep->calibrationconsistency = $plugindefaults->consistence;
+    }
+
+    if (isset($workshep->gradinggradepass)) {
+        $workshep->gradinggradepass = (float)unformat_float($workshep->gradinggradepass);
+    }
+
+    if (isset($workshep->submissiongradepass)) {
+        $workshep->submissiongradepass = (float)unformat_float($workshep->submissiongradepass);
+    }
+
+    if (isset($workshep->submissionfiletypes)) {
+        $filetypesutil = new \core_form\filetypes_util();
+        $submissionfiletypes = $filetypesutil->normalize_file_types($workshep->submissionfiletypes);
+        $workshep->submissionfiletypes = implode(' ', $submissionfiletypes);
+    }
+
+    if (isset($workshep->overallfeedbackfiletypes)) {
+        $filetypesutil = new \core_form\filetypes_util();
+        $overallfeedbackfiletypes = $filetypesutil->normalize_file_types($workshep->overallfeedbackfiletypes);
+        $workshep->overallfeedbackfiletypes = implode(' ', $overallfeedbackfiletypes);
+    }
 
     // todo - if the grading strategy is being changed, we may want to replace all aggregated peer grades with nulls
 
 
-	if ($workshep->usecalibration) {
+    if ($workshep->usecalibration) {
 
-		//here's a fun fact: disabling a checkbox stops it from being submitted with the form
-		$workshep->useexamples = true;
-		switch($workshep->calibrationphase) {
-			case workshep::PHASE_SETUP:
-				$workshep->examplesmode = workshep::EXAMPLES_BEFORE_SUBMISSION;
-				break;
-			case workshep::PHASE_SUBMISSION:
-				$workshep->examplesmode = workshep::EXAMPLES_BEFORE_ASSESSMENT;
-				break;
-		}
+        //here's a fun fact: disabling a checkbox stops it from being submitted with the form
+        $workshep->useexamples = true;
+        switch($workshep->calibrationphase) {
+            case workshep::PHASE_SETUP:
+                $workshep->examplesmode = workshep::EXAMPLES_BEFORE_SUBMISSION;
+                break;
+            case workshep::PHASE_SUBMISSION:
+                $workshep->examplesmode = workshep::EXAMPLES_BEFORE_ASSESSMENT;
+                break;
+        }
 
-		$oldcalibration = $DB->get_field('workshep', 'usecalibration', array('id' => $workshep->id));
-		if ($oldcalibration == false) {
-			//turning on calibration - we want to switch to the calibrated evaluation plugin
-			$workshep->evaluation = 'calibrated';
-		}
-	}
+        $oldcalibration = $DB->get_field('workshep', 'usecalibration', array('id' => $workshep->id));
+        if ($oldcalibration == false) {
+            //turning on calibration - we want to switch to the calibrated evaluation plugin
+            $workshep->evaluation = 'calibrated';
+        }
+    }
 
     $DB->update_record('workshep', $workshep);
     $context = context_module::instance($workshep->coursemodule);
@@ -226,6 +295,8 @@ function workshep_update_instance(stdclass $workshep) {
 
     // update calendar events
     workshep_calendar_update($workshep, $workshep->coursemodule);
+    $completionexpected = (!empty($workshep->completionexpected)) ? $workshep->completionexpected : null;
+    \core_completion\api::update_completion_date_event($workshep->coursemodule, 'workshep', $workshep->id, $completionexpected);
 
     return true;
 }
@@ -296,6 +367,58 @@ function workshep_delete_instance($id) {
     grade_update('mod/workshep', $workshep->course, 'mod', 'workshep', $workshep->id, 0, null, array('deleted' => true));
     grade_update('mod/workshep', $workshep->course, 'mod', 'workshep', $workshep->id, 1, null, array('deleted' => true));
 
+    return true;
+}
+
+/**
+ * This standard function will check all instances of this module
+ * and make sure there are up-to-date events created for each of them.
+ * If courseid = 0, then every workshep event in the site is checked, else
+ * only workshep events belonging to the course specified are checked.
+ *
+ * @param  integer $courseid The Course ID.
+ * @param int|stdClass $instance workshep module instance or ID.
+ * @param int|stdClass $cm Course module object or ID.
+ * @return bool Returns true if the calendar events were successfully updated.
+ */
+function workshep_refresh_events($courseid = 0, $instance = null, $cm = null) {
+    global $DB;
+
+    // If we have instance information then we can just update the one event instead of updating all events.
+    if (isset($instance)) {
+        if (!is_object($instance)) {
+            $instance = $DB->get_record('workshep', array('id' => $instance), '*', MUST_EXIST);
+        }
+        if (isset($cm)) {
+            if (!is_object($cm)) {
+                $cm = (object)array('id' => $cm);
+            }
+        } else {
+            $cm = get_coursemodule_from_instance('workshep', $instance->id);
+        }
+        workshep_calendar_update($instance, $cm->id);
+        return true;
+    }
+
+    if ($courseid) {
+        // Make sure that the course id is numeric.
+        if (!is_numeric($courseid)) {
+            return false;
+        }
+        if (!$worksheps = $DB->get_records('workshep', array('course' => $courseid))) {
+            return false;
+        }
+    } else {
+        if (!$worksheps = $DB->get_records('workshep')) {
+            return false;
+        }
+    }
+    foreach ($worksheps as $workshep) {
+        if (!$cm = get_coursemodule_from_instance('workshep', $workshep->id, $courseid, false)) {
+            continue;
+        }
+        workshep_calendar_update($workshep, $cm->id);
+    }
     return true;
 }
 
@@ -914,7 +1037,7 @@ function workshep_print_recent_mod_activity($activity, $courseid, $detail, $modn
             echo html_writer::start_tag('h4', array('class'=>'workshep'));
             $url = new moodle_url('/mod/workshep/view.php', array('id'=>$activity->cmid));
             $name = s($activity->name);
-            echo html_writer::empty_tag('img', array('src'=>$OUTPUT->pix_url('icon', $activity->type), 'class'=>'icon', 'alt'=>$name));
+            echo $OUTPUT->image_icon('icon', $name, $activity->type);
             echo ' ' . $modnames[$activity->type];
             echo html_writer::link($url, $name, array('class'=>'name', 'style'=>'margin-left: 5px'));
             echo html_writer::end_tag('h4');
@@ -951,7 +1074,7 @@ function workshep_print_recent_mod_activity($activity, $courseid, $detail, $modn
             echo html_writer::start_tag('h4', array('class'=>'workshep'));
             $url = new moodle_url('/mod/workshep/view.php', array('id'=>$activity->cmid));
             $name = s($activity->name);
-            echo html_writer::empty_tag('img', array('src'=>$OUTPUT->pix_url('icon', $activity->type), 'class'=>'icon', 'alt'=>$name));
+            echo $OUTPUT->image_icon('icon', $name, $activity->type);
             echo ' ' . $modnames[$activity->type];
             echo html_writer::link($url, $name, array('class'=>'name', 'style'=>'margin-left: 5px'));
             echo html_writer::end_tag('h4');
@@ -1167,11 +1290,13 @@ function workshep_update_grades(stdclass $workshep, $userid=0) {
     global $CFG, $DB;
     require_once($CFG->libdir.'/gradelib.php');
 
+    //this is necessary because we need data like the grouping id
+    $course     = $DB->get_record('course', array('id' => $workshep->course), '*', MUST_EXIST);
+    $cm         = get_coursemodule_from_instance('workshep', $workshep->id, $course->id, false, MUST_EXIST);
     //todo: this ignores userid
+
+    $submissiongrades = array();
     if($workshep->teammode) {
-        //this is necessary because we need data like the grouping id
-        $course     = $DB->get_record('course', array('id' => $workshep->course), '*', MUST_EXIST);
-        $cm         = get_coursemodule_from_instance('workshep', $workshep->id, $course->id, false, MUST_EXIST);
         $whereuser  = '';
         $whereuserparams = array();
         if ($userid) {
@@ -1239,7 +1364,6 @@ function workshep_update_grades(stdclass $workshep, $userid=0) {
                   FROM {workshep_submissions}
                  WHERE workshepid = :workshepid AND example=0' . $whereuser;
         $records = $DB->get_records_sql($sql, $params);
-        $submissiongrades = array();
         foreach ($records as $record) {
             $grade = new stdclass();
             $grade->userid = $record->authorid;
@@ -1270,6 +1394,15 @@ function workshep_update_grades(stdclass $workshep, $userid=0) {
         $grade->rawgrade = grade_floatval($workshep->gradinggrade * $record->gradinggrade / 100);
         $grade->dategraded = $record->timegraded;
         $assessmentgrades[$record->userid] = $grade;
+    }
+
+    $teameval_plugin = core_plugin_manager::instance()->get_plugin_info('local_teameval');
+    if ($teameval_plugin && $cm && !empty($submissiongrades)) {
+        // TODO: This is not ideal. It turns out a workshop can exist without a corresponding coursemodule.
+        // But TE depends pretty heavily on using the coursemodule as a representative of its host plugin.
+        // Possible solution: fire off an adhoc task?
+        $evaluationcontext = workshep_get_evaluation_context($cm);
+        $submissiongrades = $evaluationcontext->update_grades($submissiongrades);
     }
 
     workshep_grade_item_update($workshep, $submissiongrades, $assessmentgrades);
@@ -1377,8 +1510,8 @@ function workshep_pluginfile($course, $cm, $context, $filearea, array $args, $fo
 
     require_login($course, true, $cm);
 
-    if ($filearea === 'instructauthors') {
-        array_shift($args); // itemid is ignored here
+    if ($filearea === 'instructauthors' or $filearea === 'instructreviewers' or $filearea === 'conclusion') {
+        // The $args are supposed to contain just the path, not the item id.
         $relativepath = implode('/', $args);
         $fullpath = "/$context->id/mod_workshep/$filearea/0/$relativepath";
 
@@ -1386,34 +1519,6 @@ function workshep_pluginfile($course, $cm, $context, $filearea, array $args, $fo
         if (!$file = $fs->get_file_by_hash(sha1($fullpath)) or $file->is_directory()) {
             send_file_not_found();
         }
-
-        // finally send the file
-        send_stored_file($file, null, 0, $forcedownload, $options);
-
-    } else if ($filearea === 'instructreviewers') {
-        array_shift($args); // itemid is ignored here
-        $relativepath = implode('/', $args);
-        $fullpath = "/$context->id/mod_workshep/$filearea/0/$relativepath";
-
-        $fs = get_file_storage();
-        if (!$file = $fs->get_file_by_hash(sha1($fullpath)) or $file->is_directory()) {
-            send_file_not_found();
-        }
-
-        // finally send the file
-        send_stored_file($file, null, 0, $forcedownload, $options);
-
-    } else if ($filearea === 'conclusion') {
-        array_shift($args); // itemid is ignored here
-        $relativepath = implode('/', $args);
-        $fullpath = "/$context->id/mod_workshep/$filearea/0/$relativepath";
-
-        $fs = get_file_storage();
-        if (!$file = $fs->get_file_by_hash(sha1($fullpath)) or $file->is_directory()) {
-            send_file_not_found();
-        }
-
-        // finally send the file
         send_stored_file($file, null, 0, $forcedownload, $options);
 
     } else if ($filearea === 'submission_content' or $filearea === 'submission_attachment') {
@@ -1604,7 +1709,8 @@ function workshep_get_file_info($browser, $areas, $course, $cm, $context, $filea
 
         } else {
 
-            $sql = "SELECT s.id, u.lastname, u.firstname
+            $userfields = get_all_user_name_fields(true, 'u');
+            $sql = "SELECT s.id, $userfields
                       FROM {workshep_submissions} s
                       JOIN {user} u ON (s.authorid = u.id)
                      WHERE s.example = 0 AND s.workshepid = ?";
@@ -1785,7 +1891,6 @@ function workshep_calendar_update(stdClass $workshep, $cmid) {
     $base->groupid      = 0;
     $base->userid       = 0;
     $base->modulename   = 'workshep';
-    $base->eventtype    = 'pluginname';
     $base->instance     = $workshep->id;
     $base->visible      = instance_is_visible('workshep', $workshep);
     $base->timeduration = 0;
@@ -1793,7 +1898,10 @@ function workshep_calendar_update(stdClass $workshep, $cmid) {
     if ($workshep->submissionstart) {
         $event = clone($base);
         $event->name = get_string('submissionstartevent', 'mod_workshep', $workshep->name);
+        $event->eventtype = WORKSHEP_EVENT_TYPE_SUBMISSION_OPEN;
+        $event->type = empty($workshep->submissionend) ? CALENDAR_EVENT_TYPE_ACTION : CALENDAR_EVENT_TYPE_STANDARD;
         $event->timestart = $workshep->submissionstart;
+        $event->timesort  = $workshep->submissionstart;
         if ($reusedevent = array_shift($currentevents)) {
             $event->id = $reusedevent->id;
         } else {
@@ -1808,7 +1916,10 @@ function workshep_calendar_update(stdClass $workshep, $cmid) {
     if ($workshep->submissionend) {
         $event = clone($base);
         $event->name = get_string('submissionendevent', 'mod_workshep', $workshep->name);
+        $event->eventtype = WORKSHEP_EVENT_TYPE_SUBMISSION_CLOSE;
+        $event->type      = CALENDAR_EVENT_TYPE_ACTION;
         $event->timestart = $workshep->submissionend;
+        $event->timesort  = $workshep->submissionend;
         if ($reusedevent = array_shift($currentevents)) {
             $event->id = $reusedevent->id;
         } else {
@@ -1823,7 +1934,10 @@ function workshep_calendar_update(stdClass $workshep, $cmid) {
     if ($workshep->assessmentstart) {
         $event = clone($base);
         $event->name = get_string('assessmentstartevent', 'mod_workshep', $workshep->name);
+        $event->eventtype = WORKSHEP_EVENT_TYPE_ASSESSMENT_OPEN;
+        $event->type      = empty($workshep->assessmentend) ? CALENDAR_EVENT_TYPE_ACTION : CALENDAR_EVENT_TYPE_STANDARD;
         $event->timestart = $workshep->assessmentstart;
+        $event->timesort  = $workshep->assessmentstart;
         if ($reusedevent = array_shift($currentevents)) {
             $event->id = $reusedevent->id;
         } else {
@@ -1838,7 +1952,10 @@ function workshep_calendar_update(stdClass $workshep, $cmid) {
     if ($workshep->assessmentend) {
         $event = clone($base);
         $event->name = get_string('assessmentendevent', 'mod_workshep', $workshep->name);
+        $event->eventtype = WORKSHEP_EVENT_TYPE_ASSESSMENT_CLOSE;
+        $event->type      = CALENDAR_EVENT_TYPE_ACTION;
         $event->timestart = $workshep->assessmentend;
+        $event->timesort  = $workshep->assessmentend;
         if ($reusedevent = array_shift($currentevents)) {
             $event->id = $reusedevent->id;
         } else {
@@ -1855,6 +1972,29 @@ function workshep_calendar_update(stdClass $workshep, $cmid) {
         $oldevent = calendar_event::load($oldevent);
         $oldevent->delete();
     }
+}
+
+/**
+ * This function receives a calendar event and returns the action associated with it, or null if there is none.
+ *
+ * This is used by block_myoverview in order to display the event appropriately. If null is returned then the event
+ * is not displayed on the block.
+ *
+ * @param calendar_event $event
+ * @param \core_calendar\action_factory $factory
+ * @return \core_calendar\local\event\entities\action_interface|null
+ */
+function mod_workshep_core_calendar_provide_event_action(calendar_event $event,
+                                                         \core_calendar\action_factory $factory) {
+
+    $cm = get_fast_modinfo($event->courseid)->instances['workshep'][$event->instance];
+
+    return $factory->create_instance(
+        get_string('viewworkshepsummary', 'workshep'),
+        new \moodle_url('/mod/workshep/view.php', array('id' => $cm->id)),
+        1,
+        true
+    );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1879,6 +2019,11 @@ function workshep_reset_course_form_definition($mform) {
 
     $mform->addElement('advcheckbox', 'reset_workshep_phase', get_string('resetphase', 'mod_workshep'));
     $mform->addHelpButton('reset_workshep_phase', 'resetphase', 'mod_workshep');
+
+    $teameval_plugin = core_plugin_manager::instance()->get_plugin_info('local_teameval');
+    if ($teameval_plugin) {
+        \mod_workshep\evaluation_context::reset_course_form_definition($mform);
+    }
 }
 
 /**
@@ -1894,6 +2039,11 @@ function workshep_reset_course_form_defaults(stdClass $course) {
         'reset_workshep_phase'          => 1,
     );
 
+    $teameval_plugin = core_plugin_manager::instance()->get_plugin_info('local_teameval');
+    if ($teameval_plugin) {
+        $defaults = array_merge($defaults, \mod_workshep\evaluation_context::reset_course_form_defaults());
+    }
+
     return $defaults;
 }
 
@@ -1906,30 +2056,279 @@ function workshep_reset_course_form_defaults(stdClass $course) {
 function workshep_reset_userdata(stdClass $data) {
     global $CFG, $DB;
 
+    // Any changes to the list of dates that needs to be rolled should be same during course restore and course reset.
+    // See MDL-9367.
+    shift_course_mod_dates('workshep', array('submissionstart', 'submissionend', 'assessmentstart', 'assessmentend'),
+        $data->timeshift, $data->courseid);
+    $status = array();
+    $status[] = array('component' => get_string('modulenameplural', 'workshep'), 'item' => get_string('datechanged'),
+        'error' => false);
+
     if (empty($data->reset_workshep_submissions)
             and empty($data->reset_workshep_assessments)
             and empty($data->reset_workshep_phase) ) {
         // Nothing to do here.
-        return array();
+        return $status;
     }
 
     $worksheprecords = $DB->get_records('workshep', array('course' => $data->courseid));
 
     if (empty($worksheprecords)) {
         // What a boring course - no worksheps here!
-        return array();
+        return $status;
     }
 
     require_once($CFG->dirroot . '/mod/workshep/locallib.php');
 
     $course = $DB->get_record('course', array('id' => $data->courseid), '*', MUST_EXIST);
-    $status = array();
+
+    $teameval_plugin = core_plugin_manager::instance()->get_plugin_info('local_teameval');
 
     foreach ($worksheprecords as $worksheprecord) {
         $cm = get_coursemodule_from_instance('workshep', $worksheprecord->id, $course->id, false, MUST_EXIST);
         $workshep = new workshep($worksheprecord, $cm, $course);
         $status = array_merge($status, $workshep->reset_userdata($data));
+        if ($teameval_plugin) {
+            $cminfo = get_fast_modinfo($cm->course)->get_cm($cm->id);
+            $evalcontext = new \mod_workshep\evaluation_context($workshep, $cminfo);
+            $status = array_merge($status, $evalcontext->reset_userdata($data));
+        }
     }
 
     return $status;
+}
+
+function workshep_get_evaluation_context($cm) {
+    global $DB, $CFG;
+
+    require_once(dirname(__FILE__).'/locallib.php');
+
+    $course         = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
+    $worksheprecord = $DB->get_record('workshep', array('id' => $cm->instance), '*', MUST_EXIST);
+
+    if ($cm instanceof stdClass) {
+        $cmrecord = $cm;
+        $cm = get_fast_modinfo($cm->course)->get_cm($cm->id);
+    } else if ($cm instanceof cm_info) {
+        $cmrecord = $cm->get_course_module_record();
+    } else {
+        throw new coding_exception("unknown cm type", gettype($cm));
+    }
+
+    $workshep = new workshep($worksheprecord, $cmrecord, $course);
+    return new \mod_workshep\evaluation_context($workshep, $cm);
+
+}
+
+/**
+ * Get icon mapping for font-awesome.
+ */
+function mod_workshep_get_fontawesome_icon_map() {
+    return [
+        'mod_workshep:userplan/task-info' => 'fa-info text-info',
+        'mod_workshep:userplan/task-todo' => 'fa-square-o',
+        'mod_workshep:userplan/task-done' => 'fa-check text-success',
+        'mod_workshep:userplan/task-fail' => 'fa-remove text-danger',
+    ];
+}
+
+/**
+ * Check if the module has any update that affects the current user since a given time.
+ *
+ * @param  cm_info $cm course module data
+ * @param  int $from the time to check updates from
+ * @param  array $filter  if we need to check only specific updates
+ * @return stdClass an object with the different type of areas indicating if they were updated or not
+ * @since Moodle 3.4
+ */
+function workshep_check_updates_since(cm_info $cm, $from, $filter = array()) {
+    global $DB, $USER;
+
+    $updates = course_check_module_updates_since($cm, $from, array('instructauthors', 'instructreviewers', 'conclusion'), $filter);
+
+    // Check if there are new submissions, assessments or assessments grades in the workshep.
+    $updates->submissions = (object) array('updated' => false);
+    $updates->assessments = (object) array('updated' => false);
+    $updates->assessmentgrades = (object) array('updated' => false);
+
+    $select = 'workshepid = ? AND authorid = ? AND (timecreated > ? OR timegraded > ? OR timemodified > ?)';
+    $params = array($cm->instance, $USER->id, $from, $from, $from);
+    $submissions = $DB->get_records_select('workshep_submissions', $select, $params, '', 'id');
+    if (!empty($submissions)) {
+        $updates->submissions->updated = true;
+        $updates->submissions->itemids = array_keys($submissions);
+    }
+
+    // Get assessments updates (both submissions reviewed by me or reviews by others).
+    $select = "SELECT a.id
+                 FROM {workshep_assessments} a
+                 JOIN {workshep_submissions} s ON a.submissionid = s.id
+                 WHERE s.workshepid = ? AND (a.timecreated > ? OR a.timemodified > ?) AND (s.authorid = ? OR a.reviewerid = ?)";
+    $params = array($cm->instance, $from, $from, $USER->id, $USER->id);
+    $assessments = $DB->get_records_sql($select, $params);
+    if (!empty($assessments)) {
+        $updates->assessments->updated = true;
+        $updates->assessments->itemids = array_keys($assessments);
+    }
+    // Finally assessment aggregated grades.
+    $select = 'workshepid = ? AND userid = ? AND timegraded > ?';
+    $params = array($cm->instance, $USER->id, $from);
+    $assessmentgrades = $DB->get_records_select('workshep_aggregations', $select, $params, '', 'id');
+    if (!empty($assessmentgrades)) {
+        $updates->assessmentgrades->updated = true;
+        $updates->assessmentgrades->itemids = array_keys($assessmentgrades);
+    }
+
+    // Now, teachers should see other students updates.
+    $canviewallsubmissions = has_capability('mod/workshep:viewallsubmissions', $cm->context);
+    $canviewallassessments = has_capability('mod/workshep:viewallassessments', $cm->context);
+    if ($canviewallsubmissions || $canviewallassessments) {
+
+        $insql = '';
+        $inparams = array();
+        // To filter by users in my groups when separated groups are forced.
+        if (groups_get_activity_groupmode($cm) == SEPARATEGROUPS) {
+            $groupusers = array_keys(groups_get_activity_shared_group_members($cm));
+            if (empty($groupusers)) {
+                return $updates;
+            }
+            list($insql, $inparams) = $DB->get_in_or_equal($groupusers);
+        }
+
+        if ($canviewallsubmissions) {
+            $updates->usersubmissions = (object) array('updated' => false);
+            $select = 'workshepid = ? AND (timecreated > ? OR timegraded > ? OR timemodified > ?)';
+            $params = array($cm->instance, $from, $from, $from);
+            if (!empty($insql)) {
+                $select .= " AND authorid $insql";
+                $params = array_merge($params, $inparams);
+            }
+            $usersubmissions = $DB->get_records_select('workshep_submissions', $select, $params, '', 'id');
+            if (!empty($usersubmissions)) {
+                $updates->usersubmissions->updated = true;
+                $updates->usersubmissions->itemids = array_keys($usersubmissions);
+            }
+        }
+
+        if ($canviewallassessments) {
+            $updates->userassessments = (object) array('updated' => false);
+            $select = "SELECT a.id
+                         FROM {workshep_assessments} a
+                         JOIN {workshep_submissions} s ON a.submissionid = s.id
+                        WHERE s.workshepid = ? AND (a.timecreated > ? OR a.timemodified > ?)";
+            $params = array($cm->instance, $from, $from);
+            if (!empty($insql)) {
+                $select .= " AND s.reviewerid $insql";
+                $params = array_merge($params, $inparams);
+            }
+            $userassessments = $DB->get_records_sql($select, $params);
+            if (!empty($userassessments)) {
+                $updates->userassessments->updated = true;
+                $updates->userassessments->itemids = array_keys($userassessments);
+            }
+
+            $updates->userassessmentgrades = (object) array('updated' => false);
+            $select = 'workshepid = ? AND timegraded > ?';
+            $params = array($cm->instance, $USER->id);
+            if (!empty($insql)) {
+                $select .= " AND userid $insql";
+                $params = array_merge($params, $inparams);
+            }
+            $userassessmentgrades = $DB->get_records_select('workshep_aggregations', $select, $params, '', 'id');
+            if (!empty($userassessmentgrades)) {
+                $updates->userassessmentgrades->updated = true;
+                $updates->userassessmentgrades->itemids = array_keys($userassessmentgrades);
+            }
+        }
+    }
+    return $updates;
+}
+
+/**
+ * Create automatic submissions
+ *
+ * @return void;
+ */
+function workshep_create_nosubmissionrequired($workshep) {
+    global $DB;
+
+    if ($workshep) {
+        $submissionusers = array();
+        // Process through the enrolled users and skip the existing submissions
+        $enrolledusers = get_enrolled_users($workshep->context);
+        $groups = $workshep->get_grouped($enrolledusers);
+        foreach ($groups as $groupid => $users) {
+            if ($groupid) {
+                if ($workshep->teammode) {
+                    list($userid, $user) = each($users);
+                    $submissionusers[] = $user;
+                } else {
+                    foreach($users as $userid => $user) {
+                        $submissionusers[$userid] = $user;
+                    }
+                }
+            }
+        }
+
+        // Re-process if no groups found
+        if (empty($submissionusers)) {
+            foreach ($groups as $groupid => $users) {
+                if ($groupid == 0) {
+                    foreach($users as $userid => $user) {
+                        $submissionusers[$userid] = $user;
+                    }
+                 }
+             }
+         }
+
+        if ($submissionusers) {
+            // Grab current submissions and index by userid
+            $submissions = $workshep->get_submissions('all');
+            $submission_by_userid = array();
+            foreach ($submissions as $submission) {
+                $submission_by_userid[$submission->authorid] = $submission;
+            }
+
+            foreach ($submissionusers as $user) {
+                if (!empty($submission_by_userid[$user->id])) {
+                    continue;
+                }
+
+                // Template for content replacement in submission.
+                $template = new stdclass();
+                $template->fullname = fullname($user);
+
+                $submission = new stdclass();
+                $submission->workshepid           = $workshep->cm->instance;
+                $submission->authorid             = $user->id;
+                $submission->example              = 0;
+                $submission->grade                = null;
+                $submission->gradeover            = null;
+                $submission->published            = null;
+                $submission->feedbackauthor       = null;
+                $submission->feedbackauthorformat = editors_get_preferred_format();
+                $submission->timecreated          = time();
+                $submission->timemodified         = time();
+                $submission->title                = get_string('nosubmissionrequired_title', 'workshep', $workshep->name);
+                $submission->content              = get_string('nosubmissionrequired_content', 'workshep', $template);
+                $submission->contentformat        = FORMAT_HTML; // updated later
+                $submission->contenttrust         = 0;           // updated later
+                $submission->late                 = 0x0;         // bit mask
+
+                // Event information.
+                $params = array(
+                    'context' => $workshep->context,
+                    'courseid' => $workshep->course->id,
+                    'other' => array(
+                        'submissiontitle' => $submission->title
+                    )
+                );
+
+                $submission->id = $DB->insert_record('workshep_submissions', $submission);
+                $params['objectid'] = $submission->id;
+                $event = \mod_workshep\event\submission_created::create($params);
+                $event->trigger();
+            }
+        }
+    }
 }

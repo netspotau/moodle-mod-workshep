@@ -38,9 +38,9 @@ $groupid = groups_get_activity_group($cm, true);
 
 $teammode = $workshep->teammode;
 if ($teammode) {
-	$data = $workshep->prepare_grading_report_data_grouped($USER->id, $groupid, 0, PHP_INT_MAX, $sortby, $sorthow);
+    $data = $workshep->prepare_grading_report_data_grouped($USER->id, $groupid, 0, PHP_INT_MAX, $sortby, $sorthow);
 } else {
- 	$data = $workshep->prepare_grading_report_data($USER->id, $groupid, 0, PHP_INT_MAX, $sortby, $sorthow);
+    $data = $workshep->prepare_grading_report_data($USER->id, $groupid, 0, PHP_INT_MAX, $sortby, $sorthow);
 }
 
 // Our grading report is a good start, but unfortunately it's not quite enough.

@@ -108,4 +108,16 @@ class submission_assessed extends \core\event\base {
             throw new \coding_exception('The \'submissionid\' value must be set in other.');
         }
     }
+
+    public static function get_objectid_mapping() {
+        return array('db' => 'workshep_assessments', 'restore' => 'workshep_assessment');
+    }
+
+    public static function get_other_mapping() {
+        $othermapped = array();
+        $othermapped['submissionid'] = array('db' => 'workshep_submissions', 'restore' => 'workshep_submission');
+        $othermapped['workshepid'] = array('db' => 'workshep', 'restore' => 'workshep');
+
+        return $othermapped;
+    }
 }

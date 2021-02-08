@@ -71,4 +71,8 @@ class course_module_viewed extends \core\event\course_module_viewed {
         $workshep = new \workshep($workshep, $cm, $course);
         return (object)array('workshep' => $workshep, 'user' => $USER);
     }
+
+    public static function get_objectid_mapping() {
+        return array('db' => 'workshep', 'restore' => 'workshep');
+    }
 }

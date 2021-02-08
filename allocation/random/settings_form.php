@@ -86,12 +86,7 @@ class workshep_random_allocator_form extends moodleform {
         $mform->addElement('checkbox', 'removecurrent', get_string('removecurrentallocations', 'workshepallocation_random'));
         $mform->setDefault('removecurrent', 0);
 
-        $options = array(); $label = '';
-        if ($workshep->examplesmode == workshep::EXAMPLES_BEFORE_ASSESSMENT) {
-            $options['disabled'] = 'disabled';
-            $label = ' <em>Workshop settings require submission before assessment</em>';
-        }
-        $mform->addElement('checkbox', 'assesswosubmission', get_string('assesswosubmission', 'workshepallocation_random'), $label, $options);
+        $mform->addElement('checkbox', 'assesswosubmission', get_string('assesswosubmission', 'workshepallocation_random'));
         $mform->setDefault('assesswosubmission', 0);
 
         if (empty($workshep->useselfassessment)) {

@@ -73,10 +73,6 @@
     border: none;
 }
 
-.path-mod-workshep .assessmentform.rubric.list .fitem .felement span {
-    display: block;
-}
-
 .path-mod-workshep .assessmentform.rubric.list .fitem .felement span input {
     display: block;
     float: left;

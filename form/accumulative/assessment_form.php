@@ -75,14 +75,14 @@ class workshep_accumulative_assessment_form extends workshep_assessment_form {
             $mform->addElement('html', $desc);
 
             // grade for this aspect
-            $label = get_string('dimensiongrade', 'workshepform_accumulative');
+            $label = get_string('dimensiongradefor', 'workshepform_accumulative', $dimtitle);
             $options = make_grades_menu($fields->{'grade__idx_' . $i});
             $options = array('-1' => get_string('choosedots')) + $options;
             $mform->addElement('select', 'grade__idx_' . $i, $label, $options);
             $mform->addRule(array('grade__idx_' . $i, 'minusone') , get_string('mustchoosegrade', 'workshepform_accumulative'), 'compare', 'gt');
 
             // comment
-            $label = get_string('dimensioncomment', 'workshepform_accumulative');
+            $label = get_string('dimensioncommentfor', 'workshepform_accumulative', $dimtitle);
             //$mform->addElement('editor', 'peercomment__idx_' . $i, $label, null, array('maxfiles' => 0));
             $mform->addElement('textarea', 'peercomment__idx_' . $i, $label, array('cols' => 60, 'rows' => 5));
         }

@@ -103,4 +103,13 @@ class phase_switched extends \core\event\base {
             throw new \coding_exception('The \'workshepphase\' value must be set in other.');
         }
     }
+
+    public static function get_objectid_mapping() {
+        return array('db' => 'workshep', 'restore' => 'workshep');
+    }
+
+    public static function get_other_mapping() {
+        // Nothing to map.
+        return false;
+    }
 }

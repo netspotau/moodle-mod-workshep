@@ -139,11 +139,12 @@ class mod_workshep_renderer extends plugin_renderer_base {
 
         return $o;
     }
-	
-	protected function helper_submission_content($submission) {
-		
-		$o = '';
-		
+    
+    protected function helper_submission_content($submission) {
+        global $CFG;
+
+        $o = '';
+        
         $content = file_rewrite_pluginfile_urls($submission->content, 'pluginfile.php', $this->page->context->id,
                                                         'mod_workshep', 'submission_content', $submission->id);
         $content = format_text($content, $submission->contentformat, array('overflowdiv'=>true));
@@ -161,9 +162,9 @@ class mod_workshep_renderer extends plugin_renderer_base {
         $o .= $this->output->container($this->helper_submission_wordcount($content), 'wordcount');
 
         $o .= $this->helper_submission_attachments($submission->id, 'html');
-		
-		return $o;
-	}
+        
+        return $o;
+    }
 
     /**
      * Renders short summary of the submission
@@ -250,10 +251,10 @@ class mod_workshep_renderer extends plugin_renderer_base {
 
         if (!$anonymous) {
             $a                  = new stdClass();
-    		$url				= new moodle_url('/group/overview.php',
+            $url                = new moodle_url('/group/overview.php',
                                             array('id' => $this->page->course->id, 'group' => $summary->group->id));
             $a->name            = $summary->group->name;
-    		$a->url				= $url->out();
+            $a->url             = $url->out();
 
             $byfullname         = get_string('byfullname', 'workshep', $a);
 
@@ -348,48 +349,62 @@ class mod_workshep_renderer extends plugin_renderer_base {
      * @return string html code to be displayed
      */
     protected function render_workshep_user_plan(workshep_user_plan $plan) {        
+        $o  = '';    // Output HTML code.
         $width = 100 / count($plan->phases);
-        $table = new html_table();
-        $table->attributes['class'] = 'userplan';
-        $table->head = array();
-        $table->colclasses = array();
-        $row = new html_table_row();
-        $row->attributes['class'] = 'phasetasks';
+        $numberofphases = count($plan->phases);
+        $o .= html_writer::start_tag('div', array(
+            'class' => 'userplan',
+            'aria-labelledby' => 'mod_workshep-userplanheading',
+            'aria-describedby' => 'mod_workshep-userplanaccessibilitytitle',
+        ));
+        $o .= html_writer::span(get_string('userplanaccessibilitytitle', 'workshep', $numberofphases),
+            'accesshide', array('id' => 'mod_workshep-userplanaccessibilitytitle'));
+        $o .= html_writer::link('#mod_workshep-userplancurrenttasks', get_string('userplanaccessibilityskip', 'workshep'),
+            array('class' => 'accesshide'));
         foreach ($plan->phases as $phasecode => $phase) {
-            $title = html_writer::tag('span', $phase->title);
+            $o .= html_writer::start_tag('dl', array('class' => 'phase', 'style' => "width: $width%;"));
             $actions = '';
-            foreach ($phase->actions as $action) {
-                switch ($action->type) {
-                case 'switchphase':
-                    $icon = 'i/marker';
-                    if ($phasecode == workshep::PHASE_ASSESSMENT
-                            and $plan->workshep->phase == workshep::PHASE_SUBMISSION
-                            and $plan->workshep->phaseswitchassessment) {
-                        $icon = 'i/scheduled';
+
+            if ($phase->active) {
+                // Mark the section as the current one.
+                $icon = $this->output->pix_icon('i/marked', '', 'moodle', ['role' => 'presentation']);
+                $actions .= get_string('userplancurrentphase', 'workshep').' '.$icon;
+
+            } else {
+                // Display a control widget to switch to the given phase or mark the phase as the current one.
+                foreach ($phase->actions as $action) {
+                    if ($action->type === 'switchphase') {
+                        if ($phasecode == workshep::PHASE_ASSESSMENT && $plan->workshep->phase == workshep::PHASE_SUBMISSION
+                                && $plan->workshep->phaseswitchassessment) {
+                            $icon = new pix_icon('i/scheduled', get_string('switchphaseauto', 'mod_workshep'));
+                        } else {
+                            $icon = new pix_icon('i/marker', get_string('switchphase'.$phasecode, 'mod_workshep'));
+                        }
+                        $actions .= $this->output->action_icon($action->url, $icon, null, null, true);
                     }
-                    $actions .= $this->output->action_icon($action->url, new pix_icon($icon, get_string('switchphase', 'workshep')));
-                    break;
                 }
             }
+
             if (!empty($actions)) {
                 $actions = $this->output->container($actions, 'actions');
             }
-            $table->head[] = $this->output->container($title . $actions);
             $classes = 'phase' . $phasecode;
             if ($phase->active) {
+                $title = html_writer::span($phase->title, 'phasetitle', ['id' => 'mod_workshep-userplancurrenttasks']);
                 $classes .= ' active';
             } else {
+                $title = html_writer::span($phase->title, 'phasetitle');
                 $classes .= ' nonactive';
             }
-            $table->colclasses[] = $classes;
-            $cell = new html_table_cell();
-            $cell->text = $this->helper_user_plan_tasks($phase->tasks);
-            $cell->style = "width: $width%";
-            $row->cells[] = $cell;
+            $o .= html_writer::start_tag('dt', array('class' => $classes));
+            $o .= $this->output->container($title . $actions);
+            $o .= html_writer::start_tag('dd', array('class' => $classes. ' phasetasks'));
+            $o .= $this->helper_user_plan_tasks($phase->tasks);
+            $o .= html_writer::end_tag('dd');
+            $o .= html_writer::end_tag('dl');
         }
-        $table->data = array($row);
-
-        return html_writer::table($table);
+        $o .= html_writer::end_tag('div');
+        return $o;
     }
 
     /**
@@ -489,21 +504,29 @@ class mod_workshep_renderer extends plugin_renderer_base {
             $sortbyname = $sortbyfirstname . ' / ' . $sortbylastname;
         }
 
+        $sortbysubmisstiontitle = $this->helper_sortable_heading(get_string('submission', 'workshep'), 'submissiontitle',
+                $options->sortby, $options->sorthow);
+        $sortbysubmisstionlastmodified = $this->helper_sortable_heading(get_string('submissionlastmodified', 'workshep'),
+                'submissionmodified', $options->sortby, $options->sorthow);
+        $sortbysubmisstion = $sortbysubmisstiontitle . ' / ' . $sortbysubmisstionlastmodified;
+
         $table->head = array();
         $table->head[] = $sortbyname;
-        $table->head[] = $this->helper_sortable_heading(get_string('submission', 'workshep'), 'submissiontitle',
-                $options->sortby, $options->sorthow);
-        $table->head[] = $this->helper_sortable_heading(get_string('receivedgrades', 'workshep'));
-        if ($options->showsubmissiongrade) {
-            $table->head[] = $this->helper_sortable_heading(get_string('submissiongradeof', 'workshep', $data->maxgrade),
-                    'submissiongrade', $options->sortby, $options->sorthow);
-        }
-        $table->head[] = $this->helper_sortable_heading(get_string('givengrades', 'workshep'));
-        if ($options->showgradinggrade) {
-            $table->head[] = $this->helper_sortable_heading(get_string('gradinggradeof', 'workshep', $data->maxgradinggrade),
-                    'gradinggrade', $options->sortby, $options->sorthow);
-        }
+        $table->head[] = $sortbysubmisstion;
 
+        // If we are in submission phase ignore the following headers (columns).
+        if (!empty($options->workshepphase) && $options->workshepphase != workshep::PHASE_SUBMISSION) {
+            $table->head[] = $this->helper_sortable_heading(get_string('receivedgrades', 'workshep'));
+            if ($options->showsubmissiongrade) {
+                $table->head[] = $this->helper_sortable_heading(get_string('submissiongradeof', 'workshep', $data->maxgrade),
+                        'submissiongrade', $options->sortby, $options->sorthow);
+            }
+            $table->head[] = $this->helper_sortable_heading(get_string('givengrades', 'workshep'));
+            if ($options->showgradinggrade) {
+                $table->head[] = $this->helper_sortable_heading(get_string('gradinggradeof', 'workshep', $data->maxgradinggrade),
+                        'gradinggrade', $options->sortby, $options->sorthow);
+            }
+        }
         $table->rowclasses  = array();
         $table->colclasses  = array();
         $table->data        = array();
@@ -553,6 +576,13 @@ class mod_workshep_renderer extends plugin_renderer_base {
                     $cell->attributes['class'] = 'submission';
                     $row->cells[] = $cell;
                 }
+
+                // If we are in submission phase ignore the following columns.
+                if (!empty($options->workshepphase) && $options->workshepphase == workshep::PHASE_SUBMISSION) {
+                    $table->data[] = $row;
+                    continue;
+                }
+
                 // column #3 - received grades
                 if ($tr % $spanreceived == 0) {
                     $idx = intval($tr / $spanreceived);
@@ -641,7 +671,7 @@ class mod_workshep_renderer extends plugin_renderer_base {
         $table->attributes['class'] = 'grading-report grouped';
 
         $table->head = array();
-    	$table->head[] = $this->helper_sortable_heading(get_string('groupname','group'), 'name', $options->sortby, $options->sorthow);
+        $table->head[] = $this->helper_sortable_heading(get_string('groupname','group'), 'name', $options->sortby, $options->sorthow);
         $table->head[] = $this->helper_sortable_heading(get_string('submission', 'workshep'), 'submissiontitle',
                 $options->sortby, $options->sorthow);
         $table->head[] = $this->helper_sortable_heading(get_string('receivedgrades', 'workshep'));
@@ -718,17 +748,17 @@ class mod_workshep_renderer extends plugin_renderer_base {
                 }
                 // column #6 - total grade for assessment for markers
                 if ($options->showgradinggrade and $tr % $spanreceived == 0) {
-    				$idx = intval($tr / $spanreceived);
-    				$assessment = self::array_nth($participant->reviewedby, $idx);
+                    $idx = intval($tr / $spanreceived);
+                    $assessment = self::array_nth($participant->reviewedby, $idx);
                     $cell = new html_table_cell();
 
-    				if($assessment) {
-    					$gradinggrade =	empty($userinfo[$assessment->userid]->gradinggrade) ? null : $userinfo[$assessment->userid]->gradinggrade;
+                    if($assessment) {
+                        $gradinggrade = empty($userinfo[$assessment->userid]->gradinggrade) ? null : $userinfo[$assessment->userid]->gradinggrade;
 
                        $cell->text = $this->helper_grading_report_grade($gradinggrade);
                        $cell->rowspan = $spanreceived;
                        $cell->attributes['class'] = 'gradinggrade';
-    				}
+                    }
                     $row->cells[] = $cell;
                 }
                 // column #4 - total grade for submission
@@ -876,11 +906,11 @@ class mod_workshep_renderer extends plugin_renderer_base {
 
         $o .= $this->output->container_end(); // header
 
-		if ($assessment->submission) {
-			
-			$o .= $this->container($this->helper_submission_content($assessment->submission), 'submission-full');
-		
-		}
+        if ($assessment->submission) {
+            
+            $o .= $this->container($this->helper_submission_content($assessment->submission), 'submission-full');
+        
+        }
 
         if (!is_null($assessment->form)) {
             $o .= print_collapsible_region_start('assessment-form-wrapper', uniqid('workshep-assessment'),
@@ -909,18 +939,18 @@ class mod_workshep_renderer extends plugin_renderer_base {
             }
         }
 
-		// Handle the flagged assessment resolution options
-		
-		// This is raw HTML because it's intended for use within a larger form
-		// TODO: Localisation
-		if ($assessment->resolution) {
-			$o .= <<<HTML
-			<div class="resolution">
-	<input type="radio" name="assessment_{$assessment->id}" value="1">This assessment is fair</input><br/>
-	<input type="radio" name="assessment_{$assessment->id}" value="0">This assessment is unfair and should be discounted</input>
+        // Handle the flagged assessment resolution options
+        
+        // This is raw HTML because it's intended for use within a larger form
+        // TODO: Localisation
+        if ($assessment->resolution) {
+            $o .= <<<HTML
+            <div class="resolution">
+    <input type="radio" name="assessment_{$assessment->id}" value="1">This assessment is fair</input><br/>
+    <input type="radio" name="assessment_{$assessment->id}" value="0">This assessment is unfair and should be discounted</input>
 </div>
 HTML;
-		}
+        }
         
         $o .= $this->output->container_end(); // main wrapper
 
@@ -1204,7 +1234,7 @@ HTML;
             $type       = $file->get_mimetype();
             $image      = $this->output->pix_icon(file_file_icon($file), get_mimetype_description($file), 'moodle', array('class' => 'icon'));
 
-            $linkhtml   = html_writer::link($fileurl, $image) . substr($filepath, 1) . html_writer::link($fileurl, $filename);
+            $linkhtml   = html_writer::link($fileurl, $image . substr($filepath, 1) . $filename);
             $linktxt    = "$filename [$fileurl]";
 
             if ($format == 'html') {
@@ -1263,18 +1293,26 @@ HTML;
         $out = '';
         foreach ($tasks as $taskcode => $task) {
             $classes = '';
+            $accessibilitytext = '';
             $icon = null;
             if ($task->completed === true) {
                 $classes .= ' completed';
-            } elseif ($task->completed === false) {
+                $accessibilitytext .= get_string('taskdone', 'workshep') . ' ';
+            } else if ($task->completed === false) {
                 $classes .= ' fail';
-            } elseif ($task->completed === 'info') {
+                $accessibilitytext .= get_string('taskfail', 'workshep') . ' ';
+            } else if ($task->completed === 'info') {
                 $classes .= ' info';
+                $accessibilitytext .= get_string('taskinfo', 'workshep') . ' ';
+            } else {
+                $accessibilitytext .= get_string('tasktodo', 'workshep') . ' ';
             }
             if (is_null($task->link)) {
-                $title = $task->title;
+                $title = html_writer::tag('span', $accessibilitytext, array('class' => 'accesshide'));
+                $title .= $task->title;
             } else {
-                $title = html_writer::link($task->link, $task->title);
+                $title = html_writer::tag('span', $accessibilitytext, array('class' => 'accesshide'));
+                $title .= html_writer::link($task->link, $task->title);
             }
             $title = $this->output->container($title, 'title');
             $details = $this->output->container($task->details, 'details');
@@ -1346,6 +1384,9 @@ HTML;
             $url = new moodle_url('/mod/workshep/submission.php',
                                   array('cmid' => $this->page->context->instanceid, 'id' => $participant->submissionid));
             $out = html_writer::link($url, format_string($participant->submissiontitle), array('class'=>'title'));
+
+            $lastmodified = get_string('userdatemodified', 'workshep', userdate($participant->submissionmodified));
+            $out .= html_writer::tag('div', $lastmodified, array('class' => 'lastmodified'));
         }
 
         return $out;

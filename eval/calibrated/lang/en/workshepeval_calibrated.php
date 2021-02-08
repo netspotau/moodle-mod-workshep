@@ -26,7 +26,7 @@
 
 $string['adjustgrades'] = 'Adjust Submission Grades';
 $string['adjustgrades_help'] = <<<MDOWN
-If this option is enabled, grades from reviewers with higher calibration scores carry more weight than those with lower calibration scores. For example, consider a submission reivewed by Alice and Bob. Alice gives the submission a 20, while Bob gives it a 10. **Without** this option enabled, the submission would get a 15. However, Alice's calibration score was a perfect 100%, while Bob only scored 25%. Alice is a _more competent_ reviewer. If **Adjust Submission Grades** is enabled, the submission gets 18, closer to Alice's score.
+If this option is enabled, grades from reviewers with higher calibration scores carry more weight than those with lower calibration scores. For example, consider a submission reviewed by Alice and Bob. Alice gives the submission a 20, while Bob gives it a 10. **Without** this option enabled, the submission would get a 15. However, Alice's calibration score was a perfect 100%, while Bob only scored 25%. Alice is a _more competent_ reviewer. If **Adjust Submission Grades** is enabled, the submission gets 18, closer to Alice's score.
 
 The equation used to calculate this is a **weighted mean**, where the weighting is the individual's calibration score. In the example above, the calculation is ( 20 &times; 100% + 10 &times; 25% ) / ( 100% + 25% ).
 MDOWN;

@@ -62,6 +62,11 @@ $canoverridegrades      = has_capability('mod/workshep:overridegrades', $workshe
 $isreviewer             = ($USER->id == $assessment->reviewerid);
 $isauthor               = ($USER->id == $submission->authorid);
 
+$canviewallsubmissions = $canviewallsubmissions && $workshep->check_group_membership($submission->authorid);
+if ($workshep->teammode) {
+    $isauthor = ($workshep->user_group($submission->authorid)->id == $workshep->user_group($USER->id)->id);
+}
+
 if ($canviewallsubmissions) {
     // check this flag against the group membership yet
     if (groups_get_activity_groupmode($workshep->cm) == SEPARATEGROUPS) {
@@ -88,6 +93,8 @@ if ($isauthor and !$isreviewer and !$canviewallassessments and $workshep->phase 
     print_error('nopermissions', 'error', $workshep->view_url(), 'view assessment of own work before workshep is closed');
 }
 
+$workshep->check_view_assessment($assessment, $submission);
+
 // only the reviewer is allowed to modify the assessment
 if ($isreviewer and $workshep->assessing_allowed($USER->id)) {
     $assessmenteditable = true;
@@ -98,31 +105,15 @@ if ($isreviewer and $workshep->assessing_allowed($USER->id)) {
 $output = $PAGE->get_renderer('mod_workshep');      // workshep renderer
 
 // check that all required examples have been assessed by the user
-if ($assessmenteditable and $workshep->useexamples and $workshep->examplesmode == workshep::EXAMPLES_BEFORE_ASSESSMENT
-        and !has_capability('mod/workshep:manageexamples', $workshep->context)) {
-    // the reviewer must have submitted their own submission
-    $reviewersubmission = $workshep->get_submission_by_author($assessment->reviewerid);
-    $output = $PAGE->get_renderer('mod_workshep');
-    if (!$reviewersubmission) {
-        // no money, no love
-        $assessmenteditable = false;
+if ($assessmenteditable) {
+
+    list($assessed, $notice) = $workshep->check_examples_assessed_before_assessment($assessment->reviewerid);
+    if (!$assessed) {
         echo $output->header();
         echo $output->heading(format_string($workshep->name));
-        notice(get_string('exampleneedsubmission', 'workshep'), new moodle_url('/mod/workshep/view.php', array('id' => $cm->id)));
+        notice(get_string($notice, 'workshep'), new moodle_url('/mod/workshep/view.php', array('id' => $cm->id)));
         echo $output->footer();
         exit;
-    } else {
-        $examples = $workshep->get_examples_for_reviewer($assessment->reviewerid);
-        foreach ($examples as $exampleid => $example) {
-            if (is_null($example->grade)) {
-                $assessmenteditable = false;
-                echo $output->header();
-                echo $output->heading(format_string($workshep->name));
-                notice(get_string('exampleneedassessed', 'workshep'), new moodle_url('/mod/workshep/view.php', array('id' => $cm->id)));
-                echo $output->footer();
-                exit;
-            }
-        }
     }
 }
 
@@ -163,53 +154,8 @@ if (is_null($assessment->grade) and !$assessmenteditable) {
         redirect($workshep->view_url());
     } elseif ($assessmenteditable and ($data = $mform->get_data())) {
 
-        // Let the grading strategy subplugin save its data.
-        $rawgrade = $strategy->save_assessment($assessment, $data);
-
-        // Store the data managed by the workshep core.
-        $coredata = (object)array('id' => $assessment->id);
-        if (isset($data->feedbackauthor_editor)) {
-            $coredata->feedbackauthor_editor = $data->feedbackauthor_editor;
-            $coredata = file_postupdate_standard_editor($coredata, 'feedbackauthor', $workshep->overall_feedback_content_options(),
-                $workshep->context, 'mod_workshep', 'overallfeedback_content', $assessment->id);
-            unset($coredata->feedbackauthor_editor);
-        }
-        if (isset($data->feedbackauthorattachment_filemanager)) {
-            $coredata->feedbackauthorattachment_filemanager = $data->feedbackauthorattachment_filemanager;
-            $coredata = file_postupdate_standard_filemanager($coredata, 'feedbackauthorattachment',
-                $workshep->overall_feedback_attachment_options(), $workshep->context, 'mod_workshep', 'overallfeedback_attachment',
-                $assessment->id);
-            unset($coredata->feedbackauthorattachment_filemanager);
-            if (empty($coredata->feedbackauthorattachment)) {
-                $coredata->feedbackauthorattachment = 0;
-            }
-        }
-        if (isset($data->weight) and $cansetassessmentweight) {
-            $coredata->weight = $data->weight;
-        }
-        // Update the assessment data if there is something other than just the 'id'.
-        if (count((array)$coredata) > 1 ) {
-            $DB->update_record('workshep_assessments', $coredata);
-            $params = array(
-                'relateduserid' => $submission->authorid,
-                'objectid' => $assessment->id,
-                'context' => $workshep->context,
-                'other' => array(
-                    'workshepid' => $workshep->id,
-                    'submissionid' => $assessment->submissionid
-                )
-            );
-
-            if (is_null($assessment->grade)) {
-                // All workshep_assessments are created when allocations are made. The create event is of more use located here.
-                $event = \mod_workshep\event\submission_assessed::create($params);
-                $event->trigger();
-            } else {
-                $params['other']['grade'] = $assessment->grade;
-                $event = \mod_workshep\event\submission_reassessed::create($params);
-                $event->trigger();
-            }
-        }
+        // Add or update assessment.
+        $rawgrade = $workshep->edit_assessment($assessment, $submission, $data, $strategy);
 
         // And finally redirect the user's browser.
         if (!is_null($rawgrade) and isset($data->saveandclose)) {
@@ -235,28 +181,10 @@ if ($canoverridegrades or $cansetassessmentweight) {
         'editable' => true,
         'editableweight' => $cansetassessmentweight,
         'overridablegradinggrade' => $canoverridegrades,
-		'showflaggingresolution' => $cansetassessmentweight and ($assessment->submitterflagged == 1));
+        'showflaggingresolution' => $cansetassessmentweight and ($assessment->submitterflagged == 1));
     $feedbackform = $workshep->get_feedbackreviewer_form($PAGE->url, $assessment, $options);
     if ($data = $feedbackform->get_data()) {
-        $data = file_postupdate_standard_editor($data, 'feedbackreviewer', array(), $workshep->context);
-        $record = new stdclass();
-        $record->id = $assessment->id;
-        if ($cansetassessmentweight) {
-            $record->weight = $data->weight;
-			if (isset($data->resolution)) {
-				if ($data->resolution == 0) {
-					$record->weight = 0;
-				}
-				$record->submitterflagged = -1;
-			}
-        }
-        if ($canoverridegrades) {
-            $record->gradinggradeover = $workshep->raw_grade_value($data->gradinggradeover, $workshep->gradinggrade);
-            $record->gradinggradeoverby = $USER->id;
-            $record->feedbackreviewer = $data->feedbackreviewer;
-            $record->feedbackreviewerformat = $data->feedbackreviewerformat;
-        }
-        $DB->update_record('workshep_assessments', $record);
+        $workshep->evaluate_assessment($assessment, $data, $cansetassessmentweight, $canoverridegrades);
         redirect($workshep->view_url());
     }
 }
@@ -273,7 +201,7 @@ echo $output->render($workshep->prepare_submission($submission, has_capability('
 // for evaluating the assessment
 if (trim($workshep->instructreviewers)) {
     $instructions = file_rewrite_pluginfile_urls($workshep->instructreviewers, 'pluginfile.php', $PAGE->context->id,
-        'mod_workshep', 'instructreviewers', 0, workshep::instruction_editors_options($PAGE->context));
+        'mod_workshep', 'instructreviewers', null, workshep::instruction_editors_options($PAGE->context));
     print_collapsible_region_start('', 'workshep-viewlet-instructreviewers', get_string('instructreviewers', 'workshep'));
     echo $output->box(format_text($instructions, $workshep->instructreviewersformat, array('overflowdiv'=>true)), array('generalbox', 'instructions'));
     print_collapsible_region_end();
@@ -291,7 +219,7 @@ if ($workshep->usecalibration && (($isreviewer && (($workshep->phase == workshep
     $breakdown = $calibrator->prepare_grade_breakdown($reviewer->id);
     echo $calibration_renderer->render($breakdown);
     if (!$breakdown->empty) {
-	    echo $output->heading(html_writer::link($calibrator->user_calibration_url($reviewer->id), get_string('explanation','workshep', fullname($reviewer))));
+        echo $output->heading(html_writer::link($calibrator->user_calibration_url($reviewer->id), get_string('explanation','workshep', fullname($reviewer))));
     }
     echo $output->box_end();
     print_collapsible_region_end();
@@ -320,7 +248,7 @@ if ($isreviewer) {
         'showweight'    => true,
     );
     $displayassessment = $workshep->prepare_assessment($assessment, $mform, $options);
-	
+    
     if ($isauthor and $workshep->submitterflagging) {
         if ($assessment->submitterflagged == 1) {
             //unflag
@@ -330,7 +258,7 @@ if ($isreviewer) {
             $displayassessment->add_action($workshep->flag_url($assessment->id, $PAGE->url), get_string('flagassessment', 'workshep'));
         }
     }
-	
+    
     echo $output->render($displayassessment);
 }
 

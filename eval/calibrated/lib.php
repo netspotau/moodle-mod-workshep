@@ -41,20 +41,20 @@ class workshep_calibrated_evaluation extends workshep_evaluation {
 
     /** @var the recently used settings in this workshep */
     protected $settings;
-	
-	private $examples;
-	
-	public static $grading_curves = array(9 => 4.0, 8 => 3.0, 7 => 2.0, 6 => 1.5, 5 => 1.0, 4 => 0.666, 3 => 0.5, 2 => 0.333, 1 => 0.25, 0 => 0);
-	
+    
+    private $examples;
+    
+    public static $grading_curves = array(9 => 4.0, 8 => 3.0, 7 => 2.0, 6 => 1.5, 5 => 1.0, 4 => 0.666, 3 => 0.5, 2 => 0.333, 1 => 0.25, 0 => 0);
+    
     public function __construct(workshep $workshep) {
         global $DB;
         $this->workshep = $workshep;
         $this->settings = $DB->get_record('workshepeval_calibrated', array('workshepid' => $this->workshep->id));
-		$this->examples = array();
+        $this->examples = array();
     }
 
     public function update_grading_grades(stdclass $settings, $restrict=null) {
-		
+        
         global $DB;
         
         $settings->adjustgrades = (int)!empty($settings->adjustgrades);
@@ -70,17 +70,17 @@ class workshep_calibrated_evaluation extends workshep_evaluation {
                     array('workshepid' => $this->workshep->id));
         }
         
-		$calibration_scores = $this->workshep->calibration_instance()->get_calibration_scores();
+        $calibration_scores = $this->workshep->calibration_instance()->get_calibration_scores();
 
-		$sql = <<<SQL
-		        SELECT a.id, a.reviewerid, a.grade
-		        FROM {workshep_assessments} a, {workshep_submissions} s 
-		        WHERE a.submissionid = s.id AND s.workshepid = :workshepid AND s.example = 0 AND a.weight > 0;
+        $sql = <<<SQL
+                SELECT a.id, a.reviewerid, a.grade
+                FROM {workshep_assessments} a, {workshep_submissions} s 
+                WHERE a.submissionid = s.id AND s.workshepid = :workshepid AND s.example = 0 AND a.weight > 0;
 SQL;
-		
-		$assessments = $DB->get_records_sql($sql, array("workshepid" => $this->workshep->id));
-		
-		foreach($assessments as $a) {
+        
+        $assessments = $DB->get_records_sql($sql, array("workshepid" => $this->workshep->id));
+        
+        foreach($assessments as $a) {
             $record = new stdclass();
             $record->id = $a->id;
             if (!is_null($a->grade) and isset($calibration_scores[$a->reviewerid])) {
@@ -91,15 +91,15 @@ SQL;
             
             $DB->update_record('workshep_assessments', $record, false);  // bulk operations expected
         }
-	}
+    }
     
     private function get_reference_assessments() {
         $grader = $this->workshep->grading_strategy_instance();
         $diminfo = $grader->get_dimensions_info();
         
-		// cache the reference assessments
-		$references = $this->workshep->get_examples_for_manager();
-		$calibration_scores = array();
+        // cache the reference assessments
+        $references = $this->workshep->get_examples_for_manager();
+        $calibration_scores = array();
         
         //fetch grader recordset for examples
         $userkeys = array();
@@ -120,72 +120,72 @@ SQL;
     
     public function update_submission_grades(stdclass $settings) {
     
-	
-		global $DB;
+    
+        global $DB;
         
         if ($settings->adjustgrades) {
 
-    		//fetch all the assessments for all the submissions in this 
-    		$sql = "SELECT a.id, a.submissionid, a.weight, a.grade, a.gradinggrade, a.gradinggradeover, s.title
-    				FROM {workshep_submissions} s, {workshep_assessments} a
-    				WHERE s.workshepid = {$this->workshep->id}
-    					AND s.example = 0
-    					AND a.submissionid = s.id
-    				ORDER BY a.submissionid";
-		
-    		$records = $DB->get_recordset_sql($sql);
-		
-    		$weighted_grades = array();
-    		$total_weight = 0;
-    		$current_submission = $records->current();
-    		foreach($records as $v) {
-			
-    			//this is actually "last": if the submissionid has changed, then we're on to a new submission.
-    			//it's kind of a stupid way of doing it but unfortunately there's no seeking in moodle recordsets, so
-    			//we can't get the submissionid of the next record to check if this is the last one
-    			if (($v->submissionid != $current_submission->submissionid)) {
-
-    				$this->update_submission_grade($current_submission, $weighted_grades, $total_weight);
-				
-    				//reset our vital statistics
-    				$weighted_grades = array();
-    				$total_weight = 0;
-    				$current_submission = $v;
-				
-    			}
-			
-    			//just add the submission to the queue. we do all the work in the above if statement.
-    			$gradinggrade = is_null($v->gradinggradeover) ? $v->gradinggrade : $v->gradinggradeover;
-    			$weighted_grade = $v->grade * $v->weight * $gradinggrade;
-    			$weighted_grades[] = $weighted_grade;
-    			$total_weight += $gradinggrade * $v->weight;
-    		}
-		
-    		//do it for the last one
-    		$this->update_submission_grade($current_submission, $weighted_grades, $total_weight);
+            //fetch all the assessments for all the submissions in this 
+            $sql = "SELECT a.id, a.submissionid, a.weight, a.grade, a.gradinggrade, a.gradinggradeover, s.title
+                    FROM {workshep_submissions} s, {workshep_assessments} a
+                    WHERE s.workshepid = {$this->workshep->id}
+                        AND s.example = 0
+                        AND a.submissionid = s.id
+                    ORDER BY a.submissionid";
         
-    		$records->close();
+            $records = $DB->get_recordset_sql($sql);
+        
+            $weighted_grades = array();
+            $total_weight = 0;
+            $current_submission = $records->current();
+            foreach($records as $v) {
+            
+                //this is actually "last": if the submissionid has changed, then we're on to a new submission.
+                //it's kind of a stupid way of doing it but unfortunately there's no seeking in moodle recordsets, so
+                //we can't get the submissionid of the next record to check if this is the last one
+                if (($v->submissionid != $current_submission->submissionid)) {
+
+                    $this->update_submission_grade($current_submission, $weighted_grades, $total_weight);
+                
+                    //reset our vital statistics
+                    $weighted_grades = array();
+                    $total_weight = 0;
+                    $current_submission = $v;
+                
+                }
+            
+                //just add the submission to the queue. we do all the work in the above if statement.
+                $gradinggrade = is_null($v->gradinggradeover) ? $v->gradinggrade : $v->gradinggradeover;
+                $weighted_grade = $v->grade * $v->weight * $gradinggrade;
+                $weighted_grades[] = $weighted_grade;
+                $total_weight += $gradinggrade * $v->weight;
+            }
+        
+            //do it for the last one
+            $this->update_submission_grade($current_submission, $weighted_grades, $total_weight);
+        
+            $records->close();
             
         }
     }
-	
-	private function update_submission_grade($submission, $weighted_grades, $total_weight) {
-		
-		global $DB;
-		
-		//perform weighted average
+    
+    private function update_submission_grade($submission, $weighted_grades, $total_weight) {
+        
+        global $DB;
+        
+        //perform weighted average
         if ($total_weight > 0) {
-    		$weighted_avg = array_sum($weighted_grades) / $total_weight;
+            $weighted_avg = array_sum($weighted_grades) / $total_weight;
         } else {
             $weighted_avg = null;
         }
         
-			
-		$DB->set_field('workshep_submissions','grade',$weighted_avg,array("id" => $submission->submissionid));
-		
-	}
-	
-	public function get_settings_form(moodle_url $actionurl=null) {
+            
+        $DB->set_field('workshep_submissions','grade',$weighted_avg,array("id" => $submission->submissionid));
+        
+    }
+    
+    public function get_settings_form(moodle_url $actionurl=null) {
         global $CFG;    // needed because the included files use it
         global $DB;
         require_once(dirname(__FILE__) . '/settings_form.php');
@@ -196,30 +196,30 @@ SQL;
         $attributes = array('class' => 'evalsettingsform calibrated');
 
         return new workshep_calibrated_evaluation_settings_form($actionurl, $customdata, 'post', '', $attributes);
-	}
+    }
     
-	public function get_settings() {
-		return $this->settings;
-	}
-	
-	private function get_no_competent_reviewers() {
+    public function get_settings() {
+        return $this->settings;
+    }
+    
+    private function get_no_competent_reviewers() {
 
-    	
-    	global $DB;
-    	
-    	$sql = 'SELECT a.id, a.submissionid, a.reviewerid, s.authorid, a.gradinggrade, a.weight
-    	          FROM {workshep_assessments} a
-    	    INNER JOIN {workshep_submissions} s ON (a.submissionid = s.id)
-    	         WHERE s.example = 0 AND s.workshepid = :workshepid';
-    	$params = array('workshepid' => $this->workshep->id);
-    	
-    	$allocations = $DB->get_records_sql($sql, $params);
-    	
-    	$submission_scores = array();
-    	foreach ($allocations as $a) {
-        	if (!is_null($a->gradinggrade) and ($a->weight > 0)) {
-            	if(!isset($submission_scores[$a->submissionid])) {
-                	$submission_scores[$a->submissionid] = 0;
+        
+        global $DB;
+        
+        $sql = 'SELECT a.id, a.submissionid, a.reviewerid, s.authorid, a.gradinggrade, a.weight
+                  FROM {workshep_assessments} a
+            INNER JOIN {workshep_submissions} s ON (a.submissionid = s.id)
+                 WHERE s.example = 0 AND s.workshepid = :workshepid';
+        $params = array('workshepid' => $this->workshep->id);
+        
+        $allocations = $DB->get_records_sql($sql, $params);
+        
+        $submission_scores = array();
+        foreach ($allocations as $a) {
+            if (!is_null($a->gradinggrade) and ($a->weight > 0)) {
+                if(!isset($submission_scores[$a->submissionid])) {
+                    $submission_scores[$a->submissionid] = 0;
                 }
                 $submission_scores[$a->submissionid] += $a->gradinggrade;
             }
@@ -238,7 +238,7 @@ SQL;
         }
         
         return array();
-    	
+        
     }
     
     public function has_messages() {
@@ -271,10 +271,10 @@ SQL;
         
         echo $output->box_end();
     }
-	
+    
     public static function delete_instance($workshepid) {
-		//TODO
-	}
+        //TODO
+    }
     
     public function prepare_explanation_for_assessor($userid) {
         $grader = $this->workshep->grading_strategy_instance();

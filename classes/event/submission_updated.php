@@ -88,4 +88,13 @@ class submission_updated extends \core\event\base {
             'submission.php?cmid=' . $this->contextinstanceid . '&id=' . $this->objectid,
             $this->objectid, $this->contextinstanceid);
     }
+
+    public static function get_objectid_mapping() {
+        return array('db' => 'workshep_submissions', 'restore' => 'workshep_submission');
+    }
+
+    public static function get_other_mapping() {
+        // Nothing to map.
+        return false;
+    }
 }

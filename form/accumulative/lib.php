@@ -364,6 +364,7 @@ class workshep_accumulative_strategy implements workshep_strategy {
                 // the dimension uses a scale
                 $diminfo[$dimid]->min = 1;
                 $diminfo[$dimid]->max = count(explode(',', $dimrecord->scale));
+                $diminfo[$dimid]->scale = $dimrecord->scale;
             } else {
                 // the dimension uses points
                 $diminfo[$dimid]->min = 0;

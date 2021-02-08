@@ -129,7 +129,8 @@ class workshep_random_allocator implements workshep_allocator {
             $allreviewers = $reviewers[0];
             $allreviewersreloaded = false;
             foreach ($newallocations as $newallocation) {
-                list($reviewerid, $authorid) = each($newallocation);
+                $reviewerid = key($newallocation);
+                $authorid = current($newallocation);
                 $a = new stdClass();
                 if (isset($allreviewers[$reviewerid])) {
                     $a->reviewername = fullname($allreviewers[$reviewerid]);
@@ -167,21 +168,14 @@ class workshep_random_allocator implements workshep_allocator {
             // by reviewer
             $result->log(get_string('numofdeallocatedassessment', 'workshepallocation_random', count($delassessments)), 'info');
             foreach ($delassessments as $delassessmentkey => $delassessmentid) {
-                $a = new stdclass();
-                $a->authorname      = fullname((object)array(
-                        'lastname'  => $assessments[$delassessmentid]->authorlastname,
-                        'firstname' => $assessments[$delassessmentid]->authorfirstname,
-                        'firstnamephonetic' => $assessments[$delassessmentid]->authorfirstnamephonetic,
-                        'lastnamephonetic' => $assessments[$delassessmentid]->authorlastnamephonetic,
-                        'middlename' => $assessments[$delassessmentid]->authormiddlename,
-                        'alternatename' => $assessments[$delassessmentid]->authoralternatename));
-                $a->reviewername    = fullname((object)array(
-                        'lastname'  => $assessments[$delassessmentid]->reviewerlastname,
-                        'firstname' => $assessments[$delassessmentid]->reviewerfirstname,
-                        'firstnamephonetic' => $assessments[$delassessmentid]->reviewerfirstnamephonetic,
-                        'lastnamephonetic' => $assessments[$delassessmentid]->reviewerlastnamephonetic,
-                        'middlename' => $assessments[$delassessmentid]->reviewermiddlename,
-                        'alternatename' => $assessments[$delassessmentid]->revieweralternatename));
+                $author = (object) [];
+                $reviewer = (object) [];
+                username_load_fields_from_object($author, $assessments[$delassessmentid], 'author');
+                username_load_fields_from_object($reviewer, $assessments[$delassessmentid], 'reviewer');
+                $a = [
+                    'authorname' => fullname($author),
+                    'reviewername' => fullname($reviewer),
+                ];
                 if (!is_null($assessments[$delassessmentid]->grade)) {
                     $result->log(get_string('allocationdeallocategraded', 'workshepallocation_random', $a), 'error', 1);
                     unset($delassessments[$delassessmentkey]);
@@ -322,7 +316,8 @@ class workshep_random_allocator implements workshep_allocator {
         $submissions    = $this->workshep->get_submissions($authorids);
         $submissions    = $this->index_submissions_by_authors($submissions);
         foreach ($newallocations as $newallocation) {
-            list($reviewerid, $authorid) = each($newallocation);
+            $reviewerid = key($newallocation);
+            $authorid = current($newallocation);
             if (!isset($submissions[$authorid])) {
                 throw new moodle_exception('unabletoallocateauthorwithoutsubmission', 'workshep');
             }
@@ -406,7 +401,8 @@ class workshep_random_allocator implements workshep_allocator {
                 continue;
             }
             foreach ($newallocations as $newallocation) {
-                list($nrid, $naid) = each($newallocation);
+                $nrid = key($newallocation);
+                $naid = current($newallocation);
                 if (array($arid, $aaid) == array($nrid, $naid)) {
                     // re-allocation found - let us continue with the next assessment
                     $keepids[$assessmentid] = null;

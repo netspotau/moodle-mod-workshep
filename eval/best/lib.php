@@ -129,10 +129,10 @@ class workshep_best_evaluation extends workshep_evaluation {
     public function display_messages() {
         
     }
-	
-	public function get_settings() {
-		return $this->settings;
-	}
+    
+    public function get_settings() {
+        return $this->settings;
+    }
 
     /**
      * Delete all data related to a given workshep module instance

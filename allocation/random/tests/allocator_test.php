@@ -121,7 +121,7 @@ class workshepallocation_random_testcase extends basic_testcase {
             87 => (object)array('id' => 121, 'authorid' => 3),
         );
         // set expectation
-        $this->setExpectedException('moodle_exception');
+        $this->expectException('moodle_exception');
         // exercise SUT
         $submissions = $this->allocator->index_submissions_by_authors($submissions);
     }

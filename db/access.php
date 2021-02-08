@@ -210,6 +210,17 @@ $capabilities = array(
         )
     ),
 
+    // Limit submit on behalf of others
+    'mod/workshep:submitonbehalfofothers' => array(
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_MODULE,
+        'archetypes' => array(
+            'teacher' => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW
+        )
+    ),
+
     // Ability to override grade for submission or the calculated grades for assessment
     // and to run aggregation tasks that computes the total grade
     'mod/workshep:overridegrades' => array(
@@ -231,6 +242,30 @@ $capabilities = array(
             'teacher' => CAP_ALLOW,
             'editingteacher' => CAP_ALLOW,
             'manager' => CAP_ALLOW
+        )
+    ),
+
+    // Ability to delete other users' submissions.
+    'mod/workshep:deletesubmissions' => array(
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_MODULE,
+        'archetypes' => array(
+            'teacher' => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW
+        )
+    ),
+
+    // Ability to export submissions to a portfolio. Applies to all submissions
+    // the user has access to.
+    'mod/workshep:exportsubmissions' => array(
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_MODULE,
+        'archetypes' => array(
+            'manager' => CAP_ALLOW,
+            'teacher' => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW,
+            'student' => CAP_ALLOW,
         )
     ),
 );

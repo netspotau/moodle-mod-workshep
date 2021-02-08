@@ -25,9 +25,9 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version  = 2014063001;
-$plugin->requires = 2010090501;  // Requires this Moodle version
+$plugin->version  = 2015051100;
+$plugin->requires = 2015050500;  // Requires this Moodle version
 $plugin->component = 'workshepeval_calibrated';
 $plugin->dependencies = array(
-    'workshepcalibration_examples'  => 2014063001,
+    'workshepcalibration_examples'  => 2015051100,
 );

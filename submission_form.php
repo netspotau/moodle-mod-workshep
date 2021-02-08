@@ -33,6 +33,7 @@ class workshep_submission_form extends moodleform {
         $mform = $this->_form;
 
         $current        = $this->_customdata['current'];
+        $sid            = isset($this->_customdata['sid']) ? $this->_customdata['sid'] : false;
         $workshep       = $this->_customdata['workshep'];
         $contentopts    = $this->_customdata['contentopts'];
         $attachmentopts = $this->_customdata['attachmentopts'];
@@ -42,6 +43,7 @@ class workshep_submission_form extends moodleform {
         $mform->addElement('text', 'title', get_string('submissiontitle', 'workshep'));
         $mform->setType('title', PARAM_TEXT);
         $mform->addRule('title', null, 'required', null, 'client');
+        $mform->addRule('title', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
 
         $mform->addElement('editor', 'content_editor', get_string('submissioncontent', 'workshep'), null, $contentopts);
         $mform->setType('content', PARAM_RAW);
@@ -64,6 +66,12 @@ class workshep_submission_form extends moodleform {
         $mform->addElement('hidden', 'example', 0);
         $mform->setType('example', PARAM_INT);
 
+        // Will be non-zero if we're trying to submit on behalf of this author
+        if ($sid) {
+            $mform->addElement('hidden', 'sid', $current->authorid);
+            $mform->setType('sid', PARAM_INT);
+        }
+
         $this->add_action_buttons();
 
         $this->set_data($current);
@@ -74,19 +82,7 @@ class workshep_submission_form extends moodleform {
 
         $errors = parent::validation($data, $files);
 
-        if (empty($data['id']) and empty($data['example'])) {
-            // make sure there is no submission saved meanwhile from another browser window
-            $sql = "SELECT COUNT(s.id)
-                      FROM {workshep_submissions} s
-                      JOIN {workshep} w ON (s.workshepid = w.id)
-                      JOIN {course_modules} cm ON (w.id = cm.instance)
-                      JOIN {modules} m ON (m.name = 'workshep' AND m.id = cm.module)
-                     WHERE cm.id = ? AND s.authorid = ? AND s.example = 0";
-
-            if ($DB->count_records_sql($sql, array($data['cmid'], $USER->id))) {
-                $errors['title'] = get_string('err_multiplesubmissions', 'mod_workshep');
-            }
-        }
+        $errors += $this->_customdata['workshep']->validate_submission_data($data);
 
         return $errors;
     }

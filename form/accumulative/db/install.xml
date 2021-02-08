@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/workshep/db" VERSION="20120122" COMMENT="XMLDB file for Moodle mod/workshep"
+<XMLDB PATH="mod/workshep/form/accumulative/db" VERSION="20120122" COMMENT="XMLDB file for Moodle mod/workshep"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
+    xsi:noNamespaceSchemaLocation="../../../../../lib/xmldb/xmldb.xsd"
 >
   <TABLES>
     <TABLE NAME="workshepform_accumulative" COMMENT="The assessment dimensions definitions of Accumulative grading strategy forms">
